@@ -5,29 +5,28 @@
 #include "utils.h"
 
 int main() {
+    printf("start spawn_caller_strcat ...");
     int err = 0;
     const char *argv[] = {"hello", "world"};
     uint64_t pid = 0;
-    uint64_t to_child[2] = {0};
-    uint64_t to_parent[2] = {0};
-
-    err = ckb_pipe(to_child);
-    CHECK(err);
-    err = ckb_pipe(to_parent);
+    uint64_t fds[2] = {0};
+    uint64_t inherited_fds[3] = {0};
+    printf("create_std_pipes ...");
+    err = create_std_pipes(fds, inherited_fds);
     CHECK(err);
 
-    uint64_t inherited_fds[2] = {to_child[0], to_parent[1]};
     spawn_args_t spgs = {
         .argc = 2,
         .argv = argv,
         .process_id = &pid,
         .inherited_fds = inherited_fds,
     };
-    err = ckb_spawn(1, 3, 0, 0, &spgs);
+    printf("start spawn ...");
+    err = ckb_spawn(1, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK(err);
     uint8_t buffer[1024] = {0};
     size_t length = 1024;
-    err = ckb_read(to_parent[0], buffer, &length);
+    err = ckb_read(fds[CKB_STDIN], buffer, &length);
     CHECK(err);
     err = memcmp("helloworld", buffer, length);
     CHECK(err);

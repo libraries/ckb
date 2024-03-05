@@ -3,9 +3,6 @@
 #include "ckb_syscalls.h"
 
 int main() {
-    char message[2048];
-    sprintf(message, "debugger print utf-8 string");
-    ckb_debug(message);
-
+    printf("debugger print utf-8 string");
     return CKB_SUCCESS;
 }

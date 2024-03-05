@@ -2,7 +2,7 @@
  *  - Args:
  *    See "exec_configurable_callee.c".
  */
-
+#include <stdlib.h>
 #include "blockchain.h"
 #include "ckb_dlfcn.h"
 #include "ckb_syscalls.h"

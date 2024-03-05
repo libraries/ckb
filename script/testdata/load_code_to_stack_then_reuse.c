@@ -4,7 +4,7 @@
  *    - A little endian unsigned 64 bits integer: `size`.
  *    - The `code_hash`(`data_hash`) of a shared library.
  */
-
+#include <stdlib.h>
 #include "blockchain.h"
 #include "ckb_dlfcn.h"
 #include "ckb_syscalls.h"

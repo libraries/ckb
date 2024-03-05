@@ -4,7 +4,7 @@
  *    - `num0 == 0 && num1 == 0`
  *    - `cpop(num0) == num 1`
  */
-
+#include <stdlib.h>
 #include "blockchain.h"
 #include "ckb_syscalls.h"
 
