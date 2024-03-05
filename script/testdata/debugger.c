@@ -1,5 +1,6 @@
-#include "ckb_syscalls.h"
 #include <stdio.h>
+
+#include "ckb_syscalls.h"
 
 int main() {
     char message[2048];
