@@ -20,11 +20,11 @@ use std::sync::{Arc, Mutex};
 pub struct MachineContext<
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 > {
-    id: VmId,
-    base_cycles: Arc<Mutex<u64>>,
-    message_box: Arc<Mutex<Vec<Message>>>,
-    snapshot2_context: Arc<Mutex<Snapshot2Context<DataPieceId, TxData<DL>>>>,
-    script_version: ScriptVersion,
+    pub(crate) id: VmId,
+    pub(crate) base_cycles: Arc<Mutex<u64>>,
+    pub(crate) message_box: Arc<Mutex<Vec<Message>>>,
+    pub(crate) snapshot2_context: Arc<Mutex<Snapshot2Context<DataPieceId, TxData<DL>>>>,
+    pub(crate) script_version: ScriptVersion,
 }
 
 impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
@@ -49,23 +49,8 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         &self.snapshot2_context
     }
 
-    pub fn base_cycles(&self) -> u64 {
-        *self.base_cycles.lock().expect("lock")
-    }
-
     pub fn set_base_cycles(&mut self, base_cycles: u64) {
         *self.base_cycles.lock().expect("lock") = base_cycles;
-    }
-
-    // The different architecture here requires a re-implementation on current
-    // cycles syscall.
-    fn current_cycles<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let cycles = self
-            .base_cycles()
-            .checked_add(machine.cycles())
-            .ok_or(Error::CyclesOverflow)?;
-        machine.set_register(A0, Mac::REG::from_u64(cycles));
-        Ok(())
     }
 
     // Reimplementation of load_cell_data but keep tracks of pages that are copied from
@@ -492,13 +477,6 @@ impl<
     fn ecall(&mut self, machine: &mut Mac) -> Result<bool, Error> {
         let code = machine.registers()[A7].to_u64();
         match code {
-            2042 => {
-                if self.script_version >= ScriptVersion::V1 {
-                    self.current_cycles(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
             2091 => self.load_cell_data_as_code(machine),
             2092 => self.load_cell_data(machine),
             2177 => self.debug(machine),

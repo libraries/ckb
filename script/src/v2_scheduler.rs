@@ -767,8 +767,9 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             // We will update max_cycles for each machine when it gets a chance to run
             u64::max_value(),
         );
-        let machine_context =
+        let mut machine_context =
             MachineContext::new(*id, self.message_box.clone(), self.tx_data.clone(), version);
+        machine_context.base_cycles = Arc::clone(&self.syscalls.base_cycles);
         let machine_builder = DefaultMachineBuilder::new(core_machine)
             .instruction_cycle_func(Box::new(estimate_cycles))
             // ckb-vm iterates syscalls in insertion order, by putting
