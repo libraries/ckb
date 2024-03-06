@@ -83,3 +83,19 @@ int simple_spawn(size_t index) {
 exit:
     return err;
 }
+
+// spawn script at `index` in cell_deps with argv
+int simple_spawn_args(size_t index, int argc, const char* argv[]) {
+    int err = 0;
+    int8_t spawn_exit_code = 255;
+    uint64_t pid = 0;
+    uint64_t fds[1] = {0};
+    spawn_args_t spgs = {.argc = argc, .argv = argv, .process_id = &pid, .inherited_fds = fds};
+    err = ckb_spawn(index, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK(err);
+    err = ckb_wait(pid, &spawn_exit_code);
+    CHECK(err);
+    CHECK(spawn_exit_code);
+exit:
+    return err;
+}
