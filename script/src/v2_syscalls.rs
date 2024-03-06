@@ -339,22 +339,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Err(Error::External("YIELD".to_string()))
     }
 
-    // Create a pair of pipes
-    fn pipe<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let pipe1_addr = machine.registers()[A0].to_u64();
-        let pipe2_addr = pipe1_addr.wrapping_add(8);
-        // TODO: charge cycles
-        self.message_box.lock().expect("lock").push(Message::Pipe(
-            self.id,
-            PipeArgs {
-                pipe1_addr,
-                pipe2_addr,
-            },
-        ));
-
-        Err(Error::External("YIELD".to_string()))
-    }
-
     // Write to pipe
     fn pipe_write<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
         let pipe = PipeId(machine.registers()[A0].to_u64());
@@ -485,13 +469,6 @@ impl<
             2602 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.wait(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2604 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.pipe(machine)
                 } else {
                     return Ok(false);
                 }

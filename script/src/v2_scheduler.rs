@@ -78,6 +78,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         script_version: ScriptVersion,
         syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
     ) -> Self {
+        let message_box = syscalls_generator.message_box.clone();
         Self {
             tx_data,
             script_version,
@@ -90,7 +91,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             inherited_fd: BTreeMap::default(),
             instantiated: BTreeMap::default(),
             suspended: HashMap::default(),
-            message_box: Arc::new(Mutex::new(Vec::new())),
+            message_box,
             terminated_vms: HashMap::default(),
         }
     }

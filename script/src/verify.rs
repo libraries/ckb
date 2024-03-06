@@ -2,15 +2,14 @@
 use crate::syscalls::Pause;
 use crate::syscalls::ProcessID;
 use crate::v2_scheduler::Scheduler;
-use crate::v2_types::{RunMode, TxData};
-use crate::v2_types::{VmId, FIRST_VM_ID};
+use crate::v2_types::{Message, RunMode, TxData, VmId, FIRST_VM_ID};
 use crate::{
     cost_model::transferred_byte_cycles,
     error::{ScriptError, TransactionScriptError},
     syscalls::{
         spawn::{build_child_machine, update_caller_machine},
         CurrentCycles, CurrentMemory, Debugger, Exec, GetMemoryLimit, LoadBlockExtension, LoadCell,
-        LoadCellData, LoadHeader, LoadInput, LoadScript, LoadScriptHash, LoadTx, LoadWitness,
+        LoadCellData, LoadHeader, LoadInput, LoadScript, LoadScriptHash, LoadTx, LoadWitness, Pipe,
         SetContent, Spawn, VMVersion,
     },
     type_id::TypeIdSystemScript,
@@ -149,6 +148,7 @@ pub struct TransactionScriptsSyscallsGenerator<DL> {
     pub(crate) base_cycles: Arc<Mutex<u64>>,
     pub(crate) data_loader: DL,
     pub(crate) debug_printer: DebugPrinter,
+    pub(crate) message_box: Arc<Mutex<Vec<Message>>>,
     pub(crate) outputs: Arc<Vec<CellMeta>>,
     pub(crate) rtx: Arc<ResolvedTransaction>,
     #[cfg(test)]
@@ -283,8 +283,13 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
     }
 
     /// Build syscall: process_id
-    pub fn build_process_id(&self, id: VmId) -> ProcessID {
-        ProcessID::new(id)
+    pub fn build_process_id(&self) -> ProcessID {
+        ProcessID::new(self.vm_id)
+    }
+
+    /// Build syscall: pipe
+    pub fn build_pipe(&self) -> Pipe {
+        Pipe::new(self.vm_id, self.message_box.clone())
     }
 
     /// Build syscall: current_memory
@@ -337,7 +342,8 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         if script_version >= ScriptVersion::V2 {
             syscalls.append(&mut vec![
                 Box::new(self.build_load_block_extension(Arc::clone(&script_group_input_indices))),
-                Box::new(self.build_process_id(self.vm_id)),
+                Box::new(self.build_process_id()),
+                Box::new(self.build_pipe()),
             ]);
         }
         #[cfg(test)]
@@ -492,6 +498,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             base_cycles: Arc::new(Mutex::new(0)),
             data_loader: data_loader.clone(),
             debug_printer: Arc::clone(&debug_printer),
+            message_box: Arc::new(Mutex::new(Vec::new())),
             outputs: Arc::clone(&outputs),
             rtx: Arc::clone(&rtx),
             #[cfg(test)]

@@ -12,6 +12,7 @@ mod load_script;
 mod load_script_hash;
 mod load_tx;
 mod load_witness;
+mod pipe;
 mod process_id;
 mod set_content;
 pub(crate) mod spawn;
@@ -38,6 +39,7 @@ pub use self::load_script::LoadScript;
 pub use self::load_script_hash::LoadScriptHash;
 pub use self::load_tx::LoadTx;
 pub use self::load_witness::LoadWitness;
+pub use self::pipe::Pipe;
 pub use self::process_id::ProcessID;
 pub use self::set_content::SetContent;
 pub use self::spawn::Spawn;
@@ -84,6 +86,7 @@ pub const LOAD_BLOCK_EXTENSION: u64 = 2104;
 pub const CURRENT_MEMORY: u64 = 2105;
 pub const DEBUG_PRINT_SYSCALL_NUMBER: u64 = 2177;
 pub const PROCESS_ID: u64 = 2603;
+pub const PIPE: u64 = 2604;
 #[cfg(test)]
 pub const DEBUG_PAUSE: u64 = 2178;
 
