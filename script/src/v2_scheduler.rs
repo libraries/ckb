@@ -52,7 +52,7 @@ pub struct Scheduler<
     // implementation is strictly tied to TransactionScriptsVerifier, we
     // are using it here to save some extra code.
     script_version: ScriptVersion,
-    syscalls: TransactionScriptsSyscallsGenerator<DL>,
+    syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
 
     total_cycles: Cycle,
     next_vm_id: VmId,
@@ -76,12 +76,12 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
     pub fn new(
         tx_data: TxData<DL>,
         script_version: ScriptVersion,
-        syscalls: TransactionScriptsSyscallsGenerator<DL>,
+        syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
     ) -> Self {
         Self {
             tx_data,
             script_version,
-            syscalls,
+            syscalls_generator,
             total_cycles: 0,
             next_vm_id: FIRST_VM_ID,
             next_pipe_slot: FIRST_PIPE_SLOT,
@@ -103,13 +103,13 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
     pub fn resume(
         tx_data: TxData<DL>,
         script_version: ScriptVersion,
-        syscalls: TransactionScriptsSyscallsGenerator<DL>,
+        syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
         full: FullSuspendedState,
     ) -> Self {
         Self {
             tx_data,
             script_version,
-            syscalls,
+            syscalls_generator,
             total_cycles: full.total_cycles,
             next_vm_id: full.next_vm_id,
             next_pipe_slot: full.next_pipe_slot,
@@ -767,9 +767,13 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             // We will update max_cycles for each machine when it gets a chance to run
             u64::max_value(),
         );
+
+        let mut syscalls_generator = self.syscalls_generator.clone();
+        syscalls_generator.vm_id = *id;
         let mut machine_context =
             MachineContext::new(*id, self.message_box.clone(), self.tx_data.clone(), version);
-        machine_context.base_cycles = Arc::clone(&self.syscalls.base_cycles);
+        machine_context.base_cycles = Arc::clone(&self.syscalls_generator.base_cycles);
+
         let machine_builder = DefaultMachineBuilder::new(core_machine)
             .instruction_cycle_func(Box::new(estimate_cycles))
             // ckb-vm iterates syscalls in insertion order, by putting
@@ -777,8 +781,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             // syscalls with implementations from MachineContext. For example,
             // we can override load_cell_data syscall with a new implementation.
             .syscall(Box::new(machine_context.clone()));
-        let machine_builder = self
-            .syscalls
+        let machine_builder = syscalls_generator
             .generate_root_syscalls(version, &self.tx_data.script_group, Default::default())
             .into_iter()
             .fold(machine_builder, |builder, syscall| builder.syscall(syscall));

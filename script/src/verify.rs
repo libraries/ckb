@@ -1,7 +1,9 @@
 #[cfg(test)]
 use crate::syscalls::Pause;
+use crate::syscalls::ProcessID;
 use crate::v2_scheduler::Scheduler;
 use crate::v2_types::{RunMode, TxData};
+use crate::v2_types::{VmId, FIRST_VM_ID};
 use crate::{
     cost_model::transferred_byte_cycles,
     error::{ScriptError, TransactionScriptError},
@@ -151,6 +153,7 @@ pub struct TransactionScriptsSyscallsGenerator<DL> {
     pub(crate) rtx: Arc<ResolvedTransaction>,
     #[cfg(test)]
     pub(crate) skip_pause: Arc<AtomicBool>,
+    pub(crate) vm_id: VmId,
 }
 
 impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
@@ -279,6 +282,11 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         )
     }
 
+    /// Build syscall: process_id
+    pub fn build_process_id(&self, id: VmId) -> ProcessID {
+        ProcessID::new(id)
+    }
+
     /// Build syscall: current_memory
     pub fn build_current_memory(&self, current_memory: u64) -> CurrentMemory {
         CurrentMemory::new(current_memory)
@@ -327,9 +335,10 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             ]);
         }
         if script_version >= ScriptVersion::V2 {
-            syscalls.push(Box::new(
-                self.build_load_block_extension(Arc::clone(&script_group_input_indices)),
-            ));
+            syscalls.append(&mut vec![
+                Box::new(self.build_load_block_extension(Arc::clone(&script_group_input_indices))),
+                Box::new(self.build_process_id(self.vm_id)),
+            ]);
         }
         #[cfg(test)]
         syscalls.push(Box::new(Pause::new(Arc::clone(&self.skip_pause))));
@@ -487,6 +496,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             rtx: Arc::clone(&rtx),
             #[cfg(test)]
             skip_pause: Arc::clone(&skip_pause),
+            vm_id: FIRST_VM_ID,
         };
 
         TransactionScriptsVerifier {

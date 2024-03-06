@@ -339,13 +339,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Err(Error::External("YIELD".to_string()))
     }
 
-    // Fetch current instance ID
-    fn process_id<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        // TODO: charge cycles
-        machine.set_register(A0, Mac::REG::from_u64(self.id));
-        Ok(())
-    }
-
     // Create a pair of pipes
     fn pipe<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
         let pipe1_addr = machine.registers()[A0].to_u64();
@@ -492,13 +485,6 @@ impl<
             2602 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.wait(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2603 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.process_id(machine)
                 } else {
                     return Ok(false);
                 }
