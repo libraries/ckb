@@ -1,3 +1,4 @@
+mod close;
 mod current_cycles;
 mod current_memory;
 mod debugger;
@@ -29,6 +30,7 @@ mod pause;
 #[cfg(test)]
 mod tests;
 
+pub use self::close::Close;
 pub use self::current_cycles::CurrentCycles;
 pub use self::current_memory::CurrentMemory;
 pub use self::debugger::Debugger;
@@ -95,6 +97,7 @@ pub const PIPE: u64 = 2604;
 pub const WRITE: u64 = 2605;
 pub const READ: u64 = 2606;
 pub const INHERITED_FD: u64 = 2607;
+pub const CLOSE: u64 = 2608;
 pub const GET_MEMORY_LIMIT: u64 = 2102;
 pub const SET_CONTENT: u64 = 2103;
 pub const CURRENT_MEMORY: u64 = 2105;

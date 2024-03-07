@@ -317,15 +317,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         // here.
         Err(Error::External("YIELD".to_string()))
     }
-
-    fn close<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let pipe = PipeId(machine.registers()[A0].to_u64());
-        self.message_box
-            .lock()
-            .expect("lock")
-            .push(Message::Close(self.id, pipe));
-        Err(Error::External("YIELD".to_string()))
-    }
 }
 
 impl<
@@ -348,13 +339,6 @@ impl<
             2601 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.spawn(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2608 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.close(machine)
                 } else {
                     return Ok(false);
                 }
