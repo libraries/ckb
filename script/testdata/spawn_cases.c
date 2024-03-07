@@ -4,15 +4,9 @@ int parent_simple_read_write() {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t inherited_fds[3] = {0};
-    err = create_std_pipes(fds, inherited_fds);
-    CHECK(err);
-
     uint64_t pid = 0;
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = inherited_fds};
-    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
-    CHECK(err);
 
+    err = full_spawn(0, 1, argv, fds, &pid);
     // write
     uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     for (size_t i = 0; i < 7; i++) {
@@ -70,13 +64,8 @@ int parent_write_dead_lock() {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t inherited_fds[3] = {0};
-    err = create_std_pipes(fds, inherited_fds);
-    CHECK(err);
-
     uint64_t pid = 0;
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = inherited_fds};
-    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    err = full_spawn(0, 1, argv, fds, &pid);
     CHECK(err);
     uint8_t data[10];
     size_t data_length = sizeof(data);
@@ -147,6 +136,138 @@ exit:
     return err;
 }
 
+int parent_wait_dead_lock() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t fds[2] = {0};
+    uint64_t pid = 0;
+    err = full_spawn(0, 1, argv, fds, &pid);
+    CHECK(err);
+    int8_t exit_code = 0;
+    err = ckb_wait(pid, &exit_code);
+    CHECK(err);
+
+exit:
+    return err;
+}
+
+int child_wait_dead_lock() {
+    uint64_t pid = 0;  // parent pid
+    int8_t exit_code = 0;
+    return ckb_wait(pid, &exit_code);
+}
+
+int parent_read_write_with_close() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t fds[2] = {0};
+    uint64_t pid = 0;
+    err = full_spawn(0, 1, argv, fds, &pid);
+    // write util the other end is closed
+    uint8_t block[100];
+    for (size_t i = 0; i < sizeof(block); i++) {
+        block[i] = 0xFF;
+    }
+    size_t actual_length = 0;
+    err = write_exact(fds[CKB_STDOUT], block, sizeof(block), &actual_length);
+    CHECK(err);
+    CHECK2(actual_length == sizeof(block), -2);
+
+    err = 0;
+exit:
+    return err;
+}
+
+int child_read_write_with_close() {
+    int err = 0;
+    uint64_t inherited_fds[2];
+    size_t inherited_fds_length = 2;
+    err = ckb_inherited_file_descriptors(inherited_fds, &inherited_fds_length);
+    CHECK(err);
+
+    // read 100 bytes and close
+    uint8_t block[100] = {0};
+    size_t actual_length = 0;
+    err = read_exact(inherited_fds[CKB_STDIN], block, sizeof(block), &actual_length);
+    CHECK(err);
+    CHECK2(actual_length == sizeof(block), -2);
+    for (size_t j = 0; j < sizeof(block); j++) {
+        CHECK2(block[j] == 0xFF, -3);
+    }
+    err = ckb_close(inherited_fds[CKB_STDIN]);
+    CHECK(err);
+
+exit:
+    return err;
+}
+
+int parent_wait_multiple() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t fds[2] = {0};
+    uint64_t pid = 0;
+    full_spawn(0, 1, argv, fds, &pid);
+    CHECK(err);
+
+    int8_t exit_code = 0;
+    err = ckb_wait(pid, &exit_code);
+    CHECK(err);
+    // second wait is not allowed
+    err = ckb_wait(pid, &exit_code);
+    CHECK2(err != 0, -2);
+    err = 0;
+exit:
+    return err;
+}
+
+int parent_inherited_fds() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t pid = 0;
+    uint64_t inherited_fds[11] = {0};
+    for (size_t i = 0; i < 5; i++) {
+        err = ckb_pipe(&inherited_fds[i * 2]);
+        CHECK(err);
+    }
+    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = inherited_fds};
+    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK(err);
+exit:
+    return err;
+}
+
+int child_inherited_fds() {
+    int err = 0;
+
+    // correct way to get fd length
+    size_t fds_length = 0;
+    err = ckb_inherited_file_descriptors(0, &fds_length);
+    CHECK2(fds_length == 10, -2);
+
+    // wrong way to get fd length
+    err = ckb_inherited_file_descriptors(0, 0);
+    CHECK2(err != 0, -2);
+
+    // get part of fds
+    uint64_t fds[8];
+    fds_length = 1;
+    err = ckb_inherited_file_descriptors(fds, &fds_length);
+    CHECK(err);
+    CHECK2(fds_length == 10, -2);
+    CHECK2(fds[0] == 2, -2);
+
+    // get all fds
+    fds_length = 10;
+    err = ckb_inherited_file_descriptors(fds, &fds_length);
+    CHECK(err);
+    CHECK2(fds_length == 10, -2);
+    for (size_t i = 0; i < 10; i++) {
+        CHECK2(fds[i] == (i + 2), -2);
+    }
+exit:
+    return err;
+}
+
 int parent_entry(int case_id) {
     if (case_id == 1) {
         return parent_simple_read_write();
@@ -154,6 +275,14 @@ int parent_entry(int case_id) {
         return parent_write_dead_lock();
     } else if (case_id == 3) {
         return parent_invalid_fd();
+    } else if (case_id == 4) {
+        return parent_wait_dead_lock();
+    } else if (case_id == 5) {
+        return parent_read_write_with_close();
+    } else if (case_id == 6) {
+        return parent_wait_multiple();
+    } else if (case_id == 7) {
+        return parent_inherited_fds();
     } else {
         return -1;
     }
@@ -166,6 +295,14 @@ int child_entry(int case_id) {
         return child_write_dead_lock();
     } else if (case_id == 3) {
         return 0;
+    } else if (case_id == 4) {
+        return child_wait_dead_lock();
+    } else if (case_id == 5) {
+        return child_read_write_with_close();
+    } else if (case_id == 6) {
+        return 0;
+    } else if (case_id == 7) {
+        return child_inherited_fds();
     } else {
         return -1;
     }

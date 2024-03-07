@@ -57,6 +57,33 @@ fn check_spawn_invalid_fd() {
 }
 
 #[test]
+fn check_spawn_wait_dead_lock() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[4]);
+    assert_eq!(
+        result.unwrap_err().to_string().contains("deadlock"),
+        SCRIPT_VERSION == ScriptVersion::V2
+    );
+}
+
+#[test]
+fn check_spawn_read_write_with_close() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[5]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
+
+#[test]
+fn check_spawn_wait_multiple() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[6]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
+
+#[test]
+fn check_spawn_inherited_fds() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[7]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
+
+#[test]
 fn check_vm_version() {
     let script_version = SCRIPT_VERSION;
 

@@ -101,6 +101,18 @@ exit:
     return err;
 }
 
+int full_spawn(size_t index, int argc, const char* argv[], uint64_t fds[2], uint64_t* pid) {
+    int err = 0;
+    uint64_t inherited_fds[3] = {0};
+    err = create_std_pipes(fds, inherited_fds);
+    CHECK(err);
+    spawn_args_t spgs = {.argc = argc, .argv = argv, .process_id = pid, .inherited_fds = inherited_fds};
+    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK(err);
+exit:
+    return err;
+}
+
 // read exact `length` bytes into buffer.
 // Will wait forever when less bytes are written on write fd.
 int read_exact(uint64_t fd, void* buffer, size_t length, size_t* actual_length) {
@@ -111,6 +123,7 @@ int read_exact(uint64_t fd, void* buffer, size_t length, size_t* actual_length) 
         size_t n = remaining_length;
         err = ckb_read(fd, start_buffer, &n);
         if (err == CKB_OTHER_END_CLOSED) {
+            err = 0;
             break;
         } else {
             CHECK(err);
@@ -137,6 +150,7 @@ int write_exact(uint64_t fd, void* buffer, size_t length, size_t* actual_length)
         size_t n = remaining_length;
         err = ckb_write(fd, start_buffer, &n);
         if (err == CKB_OTHER_END_CLOSED) {
+            err = 0;
             break;
         } else {
             CHECK(err);

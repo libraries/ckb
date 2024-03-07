@@ -343,6 +343,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
                                 .store8(&args.exit_code_addr, &u64::from_i8(exit_code))?;
                             machine.machine.set_register(A0, SUCCESS as u64);
                             self.states.insert(vm_id, VmState::Runnable);
+                            self.terminated_vms.retain(|id, _| id != &args.target_id);
                         }
                         continue;
                     }
