@@ -1,3 +1,4 @@
+use crate::syscalls::SPAWN_EXTRA_CYCLES_BASE;
 use crate::{
     v2_types::{DataPieceId, Message, PipeId, SpawnArgs, TxData, VmId},
     ScriptVersion,
@@ -234,79 +235,75 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
             argv.push(cstr);
             addr = addr.wrapping_add(8);
         }
-        let (process_id_addr, pipes) = {
-            let process_id_addr_addr = spgs_addr.wrapping_add(16);
-            let process_id_addr = machine
-                .memory_mut()
-                .load64(&Mac::REG::from_u64(process_id_addr_addr))?
-                .to_u64();
-            let pipes_addr_addr = spgs_addr.wrapping_add(24);
-            let mut pipes_addr = machine
-                .memory_mut()
-                .load64(&Mac::REG::from_u64(pipes_addr_addr))?
-                .to_u64();
 
-            let mut pipes = vec![];
-            if pipes_addr != 0 {
-                loop {
-                    let pipe = machine
-                        .memory_mut()
-                        .load64(&Mac::REG::from_u64(pipes_addr))?
-                        .to_u64();
-                    if pipe == 0 {
-                        break;
-                    }
-                    pipes.push(PipeId(pipe));
-                    pipes_addr += 8;
+        let process_id_addr_addr = spgs_addr.wrapping_add(16);
+        let process_id_addr = machine
+            .memory_mut()
+            .load64(&Mac::REG::from_u64(process_id_addr_addr))?
+            .to_u64();
+        let pipes_addr_addr = spgs_addr.wrapping_add(24);
+        let mut pipes_addr = machine
+            .memory_mut()
+            .load64(&Mac::REG::from_u64(pipes_addr_addr))?
+            .to_u64();
+
+        let mut pipes = vec![];
+        if pipes_addr != 0 {
+            loop {
+                let pipe = machine
+                    .memory_mut()
+                    .load64(&Mac::REG::from_u64(pipes_addr))?
+                    .to_u64();
+                if pipe == 0 {
+                    break;
                 }
+                pipes.push(PipeId(pipe));
+                pipes_addr += 8;
             }
-            (process_id_addr, pipes)
-        };
+        }
 
         // We are fetching the actual cell here for some in-place validation
-        {
-            let sc = self.snapshot2_context().lock().expect("lock");
-            let (_, full_length) = match sc.data_source().load_data(&data_piece_id, 0, 0) {
-                Ok(val) => val,
-                Err(Error::External(m)) if m == "INDEX_OUT_OF_BOUND" => {
-                    // This comes from TxData results in an out of bound error, to
-                    // mimic current behavior, we would return INDEX_OUT_OF_BOUND error.
-                    machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
-                    return Ok(());
-                }
-                Err(e) => return Err(e),
-            };
-            if offset >= full_length {
+        let sc = self
+            .snapshot2_context()
+            .lock()
+            .map_err(|e| Error::Unexpected(e.to_string()))?;
+        let (_, full_length) = match sc.data_source().load_data(&data_piece_id, 0, 0) {
+            Ok(val) => val,
+            Err(Error::External(m)) if m == "INDEX_OUT_OF_BOUND" => {
+                // This comes from TxData results in an out of bound error, to
+                // mimic current behavior, we would return INDEX_OUT_OF_BOUND error.
+                machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
+        if offset >= full_length {
+            machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
+            return Ok(());
+        }
+        if length > 0 {
+            let end = offset.checked_add(length).ok_or(Error::MemOutOfBound)?;
+            if end > full_length {
                 machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
                 return Ok(());
             }
-            if length > 0 {
-                let end = offset.checked_add(length).ok_or(Error::MemOutOfBound)?;
-                if end > full_length {
-                    machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
-                    return Ok(());
-                }
-            }
         }
-        // TODO: update spawn base cycles
-        machine.add_cycles_no_checking(100_000)?;
-        self.message_box.lock().expect("lock").push(Message::Spawn(
-            self.id,
-            SpawnArgs {
-                data_piece_id,
-                offset,
-                length,
-                argv,
-                pipes,
-                process_id_addr,
-            },
-        ));
-
-        // At this point, all execution has been finished, and it is expected
-        // to return Ok(()) denoting success. However we want spawn to yield
-        // its control back to scheduler, so a runnable VM with a higher ID can
-        // start its execution first. That's why we actually return a yield error
-        // here.
+        machine.add_cycles_no_checking(SPAWN_EXTRA_CYCLES_BASE)?;
+        machine.add_cycles_no_checking(transferred_byte_cycles(full_length))?;
+        self.message_box
+            .lock()
+            .map_err(|e| Error::Unexpected(e.to_string()))?
+            .push(Message::Spawn(
+                self.id,
+                SpawnArgs {
+                    data_piece_id,
+                    offset,
+                    length,
+                    argv,
+                    pipes,
+                    process_id_addr,
+                },
+            ));
         Err(Error::External("YIELD".to_string()))
     }
 }
