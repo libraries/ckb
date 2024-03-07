@@ -43,9 +43,10 @@ const MAX_INSTANTIATED_VMS: usize = 4;
 /// A scheduler holds & manipulates a core, the scheduler also holds
 /// all CKB-VM machines, each CKB-VM machine also gets a mutable reference
 /// of the core for IO operations.
-pub struct Scheduler<
+pub struct Scheduler<DL>
+where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
-> {
+{
     tx_data: TxData<DL>,
     // In fact, Scheduler here has the potential to totally replace
     // TransactionScriptsVerifier, nonetheless much of current syscall
@@ -69,8 +70,9 @@ pub struct Scheduler<
     message_box: Arc<Mutex<Vec<Message>>>,
 }
 
-impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
-    Scheduler<DL>
+impl<DL> Scheduler<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     /// Create a new scheduler from empty state
     pub fn new(

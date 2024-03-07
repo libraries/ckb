@@ -26,8 +26,9 @@ pub struct MachineContext<
     pub(crate) script_version: ScriptVersion,
 }
 
-impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
-    MachineContext<DL>
+impl<DL> MachineContext<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     pub fn new(
         id: VmId,
@@ -308,10 +309,9 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
     }
 }
 
-impl<
-        Mac: SupportMachine,
-        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
-    > Syscalls<Mac> for MachineContext<DL>
+impl<Mac: SupportMachine, DL> Syscalls<Mac> for MachineContext<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     fn initialize(&mut self, _machine: &mut Mac) -> Result<(), Error> {
         Ok(())

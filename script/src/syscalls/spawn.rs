@@ -20,7 +20,10 @@ use ckb_vm::{
 };
 use std::sync::{Arc, Mutex};
 
-pub struct Spawn<DL> {
+pub struct Spawn<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+{
     script_group: ScriptGroup,
     script_version: ScriptVersion,
     syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
@@ -29,7 +32,10 @@ pub struct Spawn<DL> {
     context: Arc<Mutex<MachineContext>>,
 }
 
-impl<DL: CellDataProvider + Clone + HeaderProvider + Send + Sync + 'static> Spawn<DL> {
+impl<DL> Spawn<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+{
     pub fn new(
         script_group: ScriptGroup,
         script_version: ScriptVersion,
@@ -252,16 +258,17 @@ where
     }
 }
 
-pub fn build_child_machine<
-    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
->(
+pub fn build_child_machine<DL>(
     script_group: &ScriptGroup,
     script_version: ScriptVersion,
     syscalls_generator: &TransactionScriptsSyscallsGenerator<DL>,
     cycles_limit: u64,
     spawn_data: &SpawnData,
     context: &Arc<Mutex<MachineContext>>,
-) -> Result<Machine, VMError> {
+) -> Result<Machine, VMError>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+{
     let SpawnData {
         callee_peak_memory,
         callee_memory_limit,

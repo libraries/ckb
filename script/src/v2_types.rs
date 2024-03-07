@@ -191,8 +191,9 @@ pub struct TxData<DL> {
     pub script_group: Arc<ScriptGroup>,
 }
 
-impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
-    DataSource<DataPieceId> for TxData<DL>
+impl<DL> DataSource<DataPieceId> for TxData<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     fn load_data(&self, id: &DataPieceId, offset: u64, length: u64) -> Result<(Bytes, u64), Error> {
         match id {

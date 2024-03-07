@@ -144,7 +144,10 @@ impl Binaries {
 ///
 /// TransactionScriptsSyscallsGenerator can be cloned.
 #[derive(Clone)]
-pub struct TransactionScriptsSyscallsGenerator<DL> {
+pub struct TransactionScriptsSyscallsGenerator<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+{
     pub(crate) base_cycles: Arc<Mutex<u64>>,
     pub(crate) data_loader: DL,
     pub(crate) debug_printer: DebugPrinter,
@@ -156,8 +159,9 @@ pub struct TransactionScriptsSyscallsGenerator<DL> {
     pub(crate) vm_id: VmId,
 }
 
-impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
-    TransactionScriptsSyscallsGenerator<DL>
+impl<DL> TransactionScriptsSyscallsGenerator<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     /// Build syscall: current_cycles
     pub fn build_current_cycles(&self) -> CurrentCycles {
@@ -411,7 +415,10 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
 ///
 /// FlatBufferBuilder owned `Vec<u8>` that grows as needed, in the
 /// future, we might refactor this to share buffer to achieve zero-copy
-pub struct TransactionScriptsVerifier<DL> {
+pub struct TransactionScriptsVerifier<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+{
     data_loader: DL,
 
     rtx: Arc<ResolvedTransaction>,
@@ -431,8 +438,9 @@ pub struct TransactionScriptsVerifier<DL> {
     syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
 }
 
-impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static>
-    TransactionScriptsVerifier<DL>
+impl<DL> TransactionScriptsVerifier<DL>
+where
+    DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
 {
     /// Creates a script verifier for the transaction.
     ///
