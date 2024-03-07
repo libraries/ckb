@@ -10,7 +10,7 @@ use crate::{
         spawn::{build_child_machine, update_caller_machine},
         CurrentCycles, CurrentMemory, Debugger, Exec, GetMemoryLimit, LoadBlockExtension, LoadCell,
         LoadCellData, LoadHeader, LoadInput, LoadScript, LoadScriptHash, LoadTx, LoadWitness, Pipe,
-        SetContent, Spawn, VMVersion, Wait,
+        Read, SetContent, Spawn, VMVersion, Wait, Write,
     },
     type_id::TypeIdSystemScript,
     types::{
@@ -297,6 +297,16 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Pipe::new(self.vm_id, self.message_box.clone())
     }
 
+    /// Build syscall: write
+    pub fn build_write(&self) -> Write {
+        Write::new(self.vm_id, self.message_box.clone())
+    }
+
+    /// Build syscall: read
+    pub fn build_read(&self) -> Read {
+        Read::new(self.vm_id, self.message_box.clone())
+    }
+
     /// Build syscall: current_memory
     pub fn build_current_memory(&self, current_memory: u64) -> CurrentMemory {
         CurrentMemory::new(current_memory)
@@ -350,6 +360,8 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
                 Box::new(self.build_process_id()),
                 Box::new(self.build_pipe()),
                 Box::new(self.build_wait()),
+                Box::new(self.build_write()),
+                Box::new(self.build_read()),
             ]);
         }
         #[cfg(test)]

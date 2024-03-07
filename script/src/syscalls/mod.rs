@@ -14,11 +14,13 @@ mod load_tx;
 mod load_witness;
 mod pipe;
 mod process_id;
+mod read;
 mod set_content;
 pub(crate) mod spawn;
 mod utils;
 mod vm_version;
 mod wait;
+mod write;
 
 #[cfg(test)]
 mod pause;
@@ -42,10 +44,12 @@ pub use self::load_tx::LoadTx;
 pub use self::load_witness::LoadWitness;
 pub use self::pipe::Pipe;
 pub use self::process_id::ProcessID;
+pub use self::read::Read;
 pub use self::set_content::SetContent;
 pub use self::spawn::Spawn;
 pub use self::vm_version::VMVersion;
 pub use self::wait::Wait;
+pub use self::write::Write;
 
 #[cfg(test)]
 pub use self::pause::Pause;
@@ -86,6 +90,8 @@ pub const SPAWN: u64 = 2601;
 pub const WAIT: u64 = 2602;
 pub const PROCESS_ID: u64 = 2603;
 pub const PIPE: u64 = 2604;
+pub const WRITE: u64 = 2605;
+pub const READ: u64 = 2606;
 pub const GET_MEMORY_LIMIT: u64 = 2102;
 pub const SET_CONTENT: u64 = 2103;
 pub const CURRENT_MEMORY: u64 = 2105;

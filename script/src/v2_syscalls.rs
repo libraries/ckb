@@ -1,7 +1,5 @@
 use crate::{
-    v2_types::{
-        DataPieceId, Message, PipeArgs, PipeId, PipeIoArgs, SpawnArgs, TxData, VmId, WaitArgs,
-    },
+    v2_types::{DataPieceId, Message, PipeId, PipeIoArgs, SpawnArgs, TxData, VmId},
     ScriptVersion,
 };
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
@@ -320,78 +318,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Err(Error::External("YIELD".to_string()))
     }
 
-    // Write to pipe
-    fn pipe_write<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let pipe = PipeId(machine.registers()[A0].to_u64());
-        let buffer_addr = machine.registers()[A1].to_u64();
-        let length_addr = machine.registers()[A2].to_u64();
-        let length = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(length_addr))?
-            .to_u64();
-
-        // We can only do basic checks here, when the message is actually processed,
-        // more complete checks will be performed.
-        // We will also leave to the actual write operation to test memory permissions.
-        if !pipe.is_write() {
-            machine.set_register(A0, Mac::REG::from_u8(INVALID_PIPE));
-            return Ok(());
-        }
-
-        // TODO: charge cycles
-        self.message_box
-            .lock()
-            .expect("lock")
-            .push(Message::PipeWrite(
-                self.id,
-                PipeIoArgs {
-                    pipe,
-                    length,
-                    buffer_addr,
-                    length_addr,
-                },
-            ));
-
-        // A0 will be updated once the write operation is fulfilled
-        Err(Error::External("YIELD".to_string()))
-    }
-
-    // Read from pipe
-    fn pipe_read<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let pipe = PipeId(machine.registers()[A0].to_u64());
-        let buffer_addr = machine.registers()[A1].to_u64();
-        let length_addr = machine.registers()[A2].to_u64();
-        let length = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(length_addr))?
-            .to_u64();
-
-        // We can only do basic checks here, when the message is actually processed,
-        // more complete checks will be performed.
-        // We will also leave to the actual write operation to test memory permissions.
-        if !pipe.is_read() {
-            machine.set_register(A0, Mac::REG::from_u8(INVALID_PIPE));
-            return Ok(());
-        }
-
-        // TODO: charge cycles
-        self.message_box
-            .lock()
-            .expect("lock")
-            .push(Message::PipeRead(
-                self.id,
-                PipeIoArgs {
-                    pipe,
-                    length,
-                    buffer_addr,
-                    length_addr,
-                },
-            ));
-
-        // A0 will be updated once the read operation is fulfilled
-        Err(Error::External("YIELD".to_string()))
-    }
-
     fn inherited_file_descriptors<Mac: SupportMachine>(
         &mut self,
         machine: &mut Mac,
@@ -443,20 +369,6 @@ impl<
             2601 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.spawn(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2605 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.pipe_write(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2606 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.pipe_read(machine)
                 } else {
                     return Ok(false);
                 }
