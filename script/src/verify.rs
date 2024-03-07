@@ -1,6 +1,6 @@
 #[cfg(test)]
 use crate::syscalls::Pause;
-use crate::syscalls::ProcessID;
+use crate::syscalls::{InheritedFd, ProcessID};
 use crate::v2_scheduler::Scheduler;
 use crate::v2_types::{Message, RunMode, TxData, VmId, FIRST_VM_ID};
 use crate::{
@@ -307,6 +307,11 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Read::new(self.vm_id, self.message_box.clone())
     }
 
+    /// Build syscall: inherited_fd
+    pub fn inherited_fd(&self) -> InheritedFd {
+        InheritedFd::new(self.vm_id, self.message_box.clone())
+    }
+
     /// Build syscall: current_memory
     pub fn build_current_memory(&self, current_memory: u64) -> CurrentMemory {
         CurrentMemory::new(current_memory)
@@ -362,6 +367,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
                 Box::new(self.build_wait()),
                 Box::new(self.build_write()),
                 Box::new(self.build_read()),
+                Box::new(self.inherited_fd()),
             ]);
         }
         #[cfg(test)]

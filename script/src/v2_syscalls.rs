@@ -1,5 +1,5 @@
 use crate::{
-    v2_types::{DataPieceId, Message, PipeId, PipeIoArgs, SpawnArgs, TxData, VmId},
+    v2_types::{DataPieceId, Message, PipeId, SpawnArgs, TxData, VmId},
     ScriptVersion,
 };
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
@@ -318,27 +318,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Err(Error::External("YIELD".to_string()))
     }
 
-    fn inherited_file_descriptors<Mac: SupportMachine>(
-        &mut self,
-        machine: &mut Mac,
-    ) -> Result<(), Error> {
-        let buffer_addr = machine.registers()[A0].to_u64();
-        let length_addr = machine.registers()[A1].to_u64();
-        self.message_box
-            .lock()
-            .expect("lock")
-            .push(Message::InheritedFileDescriptor(
-                self.id,
-                PipeIoArgs {
-                    pipe: PipeId(0),
-                    length: 0,
-                    buffer_addr,
-                    length_addr,
-                },
-            ));
-        Err(Error::External("YIELD".to_string()))
-    }
-
     fn close<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
         let pipe = PipeId(machine.registers()[A0].to_u64());
         self.message_box
@@ -369,13 +348,6 @@ impl<
             2601 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.spawn(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2607 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.inherited_file_descriptors(machine)
                 } else {
                     return Ok(false);
                 }
