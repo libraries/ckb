@@ -18,6 +18,7 @@ mod set_content;
 pub(crate) mod spawn;
 mod utils;
 mod vm_version;
+mod wait;
 
 #[cfg(test)]
 mod pause;
@@ -44,6 +45,7 @@ pub use self::process_id::ProcessID;
 pub use self::set_content::SetContent;
 pub use self::spawn::Spawn;
 pub use self::vm_version::VMVersion;
+pub use self::wait::Wait;
 
 #[cfg(test)]
 pub use self::pause::Pause;
@@ -79,14 +81,15 @@ pub const LOAD_HEADER_BY_FIELD_SYSCALL_NUMBER: u64 = 2082;
 pub const LOAD_INPUT_BY_FIELD_SYSCALL_NUMBER: u64 = 2083;
 pub const LOAD_CELL_DATA_AS_CODE_SYSCALL_NUMBER: u64 = 2091;
 pub const LOAD_CELL_DATA_SYSCALL_NUMBER: u64 = 2092;
-pub const SPAWN: u64 = 2101;
-pub const GET_MEMORY_LIMIT: u64 = 2102;
-pub const SET_CONTENT: u64 = 2103;
 pub const LOAD_BLOCK_EXTENSION: u64 = 2104;
-pub const CURRENT_MEMORY: u64 = 2105;
-pub const DEBUG_PRINT_SYSCALL_NUMBER: u64 = 2177;
+pub const SPAWN: u64 = 2601;
+pub const WAIT: u64 = 2602;
 pub const PROCESS_ID: u64 = 2603;
 pub const PIPE: u64 = 2604;
+pub const GET_MEMORY_LIMIT: u64 = 2102;
+pub const SET_CONTENT: u64 = 2103;
+pub const CURRENT_MEMORY: u64 = 2105;
+pub const DEBUG_PRINT_SYSCALL_NUMBER: u64 = 2177;
 #[cfg(test)]
 pub const DEBUG_PAUSE: u64 = 2178;
 

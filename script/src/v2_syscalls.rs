@@ -320,25 +320,6 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         Err(Error::External("YIELD".to_string()))
     }
 
-    // Join syscall blocks till the specified VM finishes execution, then
-    // returns with its exit code
-    fn wait<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let target_id = machine.registers()[A0].to_u64();
-        let exit_code_addr = machine.registers()[A1].to_u64();
-
-        // TODO: charge cycles
-        self.message_box.lock().expect("lock").push(Message::Wait(
-            self.id,
-            WaitArgs {
-                target_id,
-                exit_code_addr,
-            },
-        ));
-
-        // Like spawn, join yields control upon success
-        Err(Error::External("YIELD".to_string()))
-    }
-
     // Write to pipe
     fn pipe_write<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
         let pipe = PipeId(machine.registers()[A0].to_u64());
@@ -462,13 +443,6 @@ impl<
             2601 => {
                 if self.script_version >= ScriptVersion::V2 {
                     self.spawn(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
-            2602 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.wait(machine)
                 } else {
                     return Ok(false);
                 }
