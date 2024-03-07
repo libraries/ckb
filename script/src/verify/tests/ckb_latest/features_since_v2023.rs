@@ -302,6 +302,7 @@ fn check_spawn_out_of_cycles_wrap() {
             .to_string()
             .contains("ExceededMaximumCycles"))
     } else {
+        assert!(result.is_err());
     }
 }
 
