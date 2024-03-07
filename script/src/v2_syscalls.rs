@@ -57,7 +57,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         let index = machine.registers()[A3].to_u64();
         let source = machine.registers()[A4].to_u64();
 
-        let data_piece_id = match DataPieceId::try_from((source, index)) {
+        let data_piece_id = match DataPieceId::try_from((source, index, 0)) {
             Ok(id) => id,
             Err(e) => {
                 // Current implementation would throw an error immediately
@@ -115,7 +115,7 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
         let index = machine.registers()[A4].to_u64();
         let source = machine.registers()[A5].to_u64();
 
-        let data_piece_id = match DataPieceId::try_from((source, index)) {
+        let data_piece_id = match DataPieceId::try_from((source, index, 0)) {
             Ok(id) => id,
             Err(e) => {
                 // Current implementation would throw an error immediately
@@ -201,47 +201,39 @@ impl<DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + C
     fn spawn<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
         let index = machine.registers()[A0].to_u64();
         let source = machine.registers()[A1].to_u64();
-        let place = machine.registers()[A2].to_u64(); // TODO: support reading data from witness
-
-        let data_piece_id = match DataPieceId::try_from((source, index)) {
+        let place = machine.registers()[A2].to_u64();
+        let data_piece_id = match DataPieceId::try_from((source, index, place)) {
             Ok(id) => id,
             Err(e) => {
-                // Current implementation would throw an error immediately
-                // for some source values, but return INDEX_OUT_OF_BOUND error
-                // for other values. Here for simplicity, we would return
-                // INDEX_OUT_OF_BOUND error in all cases. But the code might
-                // differ to mimic current on-chain behavior
-                println!("DataPieceId parsing error: {:?}", e);
                 machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
                 return Ok(());
             }
         };
-
         let bounds = machine.registers()[A3].to_u64();
         let offset = bounds >> 32;
         let length = bounds as u32 as u64;
-
         let spgs_addr = machine.registers()[A4].to_u64();
         let argc_addr = spgs_addr;
         let argc = machine
             .memory_mut()
             .load64(&Mac::REG::from_u64(argc_addr))?
             .to_u64();
-        let mut argv_addr = machine
+        let argv_addr_addr = spgs_addr.wrapping_add(8);
+        let argv_addr = machine
             .memory_mut()
-            .load64(&Mac::REG::from_u64(spgs_addr.wrapping_add(8)))?
+            .load64(&Mac::REG::from_u64(argv_addr_addr))?
             .to_u64();
+        let mut addr = argv_addr;
         let mut argv = Vec::new();
         for _ in 0..argc {
             let target_addr = machine
                 .memory_mut()
-                .load64(&Mac::REG::from_u64(argv_addr))?
+                .load64(&Mac::REG::from_u64(addr))?
                 .to_u64();
             let cstr = load_c_string(machine, target_addr)?;
             argv.push(cstr);
-            argv_addr = argv_addr.wrapping_add(8);
+            addr = addr.wrapping_add(8);
         }
-
         let (process_id_addr, pipes) = {
             let process_id_addr_addr = spgs_addr.wrapping_add(16);
             let process_id_addr = machine
