@@ -96,6 +96,8 @@ int parent_invalid_fd() {
     size_t data_length = sizeof(data);
     int err = ckb_read(invalid_fd, data, &data_length);
     CHECK2(err != 0, -2);
+    err = ckb_write(invalid_fd, data, &data_length);
+    CHECK2(err != 0, -2);
 
     uint64_t fds[2] = {0};
     err = ckb_pipe(fds);
@@ -245,11 +247,12 @@ int child_inherited_fds() {
     CHECK2(fds_length == 10, -2);
 
     // wrong way to get fd length
-    err = ckb_inherited_file_descriptors(0, 0);
+    fds_length = 2;
+    err = ckb_inherited_file_descriptors(0, &fds_length);
     CHECK2(err != 0, -2);
 
     // get part of fds
-    uint64_t fds[8];
+    uint64_t fds[11] = {0};
     fds_length = 1;
     err = ckb_inherited_file_descriptors(fds, &fds_length);
     CHECK(err);
@@ -264,6 +267,31 @@ int child_inherited_fds() {
     for (size_t i = 0; i < 10; i++) {
         CHECK2(fds[i] == (i + 2), -2);
     }
+exit:
+    return err;
+}
+
+int parent_inherited_fds_without_owner() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t pid = 0;
+    uint64_t fds[3] = {0xFF, 0xEF, 0};
+
+    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = fds};
+    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK2(err == CKB_INVALID_PIPE, -2);
+
+    // create valid fds
+    err = ckb_pipe(fds);
+    CHECK(err);
+    // then transferred by spawn
+    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK(err);
+
+    // the fds are already transferred. An error expected.
+    err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
+    CHECK2(err == CKB_INVALID_PIPE, -2);
+    err = 0;
 exit:
     return err;
 }
@@ -283,6 +311,8 @@ int parent_entry(int case_id) {
         return parent_wait_multiple();
     } else if (case_id == 7) {
         return parent_inherited_fds();
+    } else if (case_id == 8) {
+        return parent_inherited_fds_without_owner();
     } else {
         return -1;
     }
@@ -303,6 +333,8 @@ int child_entry(int case_id) {
         return 0;
     } else if (case_id == 7) {
         return child_inherited_fds();
+    } else if (case_id == 8) {
+        return 0;
     } else {
         return -1;
     }

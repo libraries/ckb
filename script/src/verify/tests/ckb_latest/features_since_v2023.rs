@@ -84,6 +84,12 @@ fn check_spawn_inherited_fds() {
 }
 
 #[test]
+fn check_spawn_inherited_fds_without_owner() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[8]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
+
+#[test]
 fn check_vm_version() {
     let script_version = SCRIPT_VERSION;
 
