@@ -109,6 +109,7 @@ where
         syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
         full: FullSuspendedState,
     ) -> Self {
+        let message_box = syscalls_generator.message_box.clone();
         Self {
             tx_data,
             script_version,
@@ -129,7 +130,7 @@ where
                 .into_iter()
                 .map(|(id, _, snapshot)| (id, snapshot))
                 .collect(),
-            message_box: Arc::new(Mutex::new(Vec::new())),
+            message_box: message_box,
             terminated_vms: full.terminated_vms.into_iter().collect(),
         }
     }

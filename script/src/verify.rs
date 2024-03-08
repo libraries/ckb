@@ -2,7 +2,7 @@
 use crate::syscalls::Pause;
 use crate::syscalls::{InheritedFd, ProcessID};
 use crate::v2_scheduler::Scheduler;
-use crate::v2_types::{Message, RunMode, TxData, VmId, FIRST_VM_ID};
+use crate::v2_types::{DataPieceId, Message, RunMode, TxData, VmId, FIRST_VM_ID};
 use crate::{
     cost_model::transferred_byte_cycles,
     error::{ScriptError, TransactionScriptError},
@@ -38,6 +38,7 @@ use ckb_types::{
 use ckb_vm::{
     cost_model::estimate_cycles,
     snapshot::{resume, Snapshot},
+    snapshot2::Snapshot2Context,
     DefaultMachineBuilder, Error as VMInternalError, SupportMachine, Syscalls,
 };
 use std::sync::{Arc, Mutex};
@@ -156,6 +157,7 @@ where
     pub(crate) rtx: Arc<ResolvedTransaction>,
     #[cfg(test)]
     pub(crate) skip_pause: Arc<AtomicBool>,
+    pub(crate) snapshot2_context: Arc<Mutex<Snapshot2Context<DataPieceId, TxData<DL>>>>,
     pub(crate) vm_id: VmId,
 }
 
@@ -541,6 +543,18 @@ where
             rtx: Arc::clone(&rtx),
             #[cfg(test)]
             skip_pause: Arc::clone(&skip_pause),
+            // Use a dummy snapshot2_context as a placeholder.
+            snapshot2_context: Arc::new(Mutex::new(Snapshot2Context::new(TxData {
+                rtx: rtx.clone(),
+                data_loader: data_loader.clone(),
+                program: Bytes::new(),
+                script_group: Arc::new(ScriptGroup {
+                    script: Default::default(),
+                    group_type: ScriptGroupType::Lock,
+                    input_indices: Default::default(),
+                    output_indices: Default::default(),
+                }),
+            }))),
             vm_id: FIRST_VM_ID,
         };
 

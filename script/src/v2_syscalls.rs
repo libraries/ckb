@@ -206,7 +206,7 @@ where
         let place = machine.registers()[A2].to_u64();
         let data_piece_id = match DataPieceId::try_from((source, index, place)) {
             Ok(id) => id,
-            Err(e) => {
+            Err(_) => {
                 machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
                 return Ok(());
             }
