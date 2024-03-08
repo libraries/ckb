@@ -296,6 +296,34 @@ exit:
     return err;
 }
 
+int parent_read_then_close() {
+    int err = 0;
+    const char* argv[] = {"", 0};
+    uint64_t pid = 0;
+    uint64_t fds[2] = {0};
+    err = full_spawn(0, 1, argv, fds, &pid);
+    CHECK(err);
+    err = ckb_close(fds[CKB_STDOUT]);
+    CHECK(err);
+exit:
+    return err;
+}
+
+int child_read_then_close() {
+    int err = 0;
+    uint64_t fds[2] = {0};
+    uint64_t fds_length = 2;
+    err = ckb_inherited_file_descriptors(fds, &fds_length);
+    CHECK(err);
+    uint8_t data[8];
+    size_t data_len = sizeof(data);
+    err = ckb_read(fds[CKB_STDIN], data, &data_len);
+    CHECK2(err == CKB_OTHER_END_CLOSED, -2);
+
+exit:
+    return err;
+}
+
 int parent_entry(int case_id) {
     if (case_id == 1) {
         return parent_simple_read_write();
@@ -313,6 +341,8 @@ int parent_entry(int case_id) {
         return parent_inherited_fds();
     } else if (case_id == 8) {
         return parent_inherited_fds_without_owner();
+    } else if (case_id == 9) {
+        return parent_read_then_close();
     } else {
         return -1;
     }
@@ -335,6 +365,8 @@ int child_entry(int case_id) {
         return child_inherited_fds();
     } else if (case_id == 8) {
         return 0;
+    } else if (case_id == 9) {
+        return child_read_then_close();
     } else {
         return -1;
     }
