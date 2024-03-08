@@ -198,115 +198,6 @@ where
 
         Ok(())
     }
-
-    // New, concurrent spawn implementation
-    fn spawn<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), Error> {
-        let index = machine.registers()[A0].to_u64();
-        let source = machine.registers()[A1].to_u64();
-        let place = machine.registers()[A2].to_u64();
-        let data_piece_id = match DataPieceId::try_from((source, index, place)) {
-            Ok(id) => id,
-            Err(_) => {
-                machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
-                return Ok(());
-            }
-        };
-        let bounds = machine.registers()[A3].to_u64();
-        let offset = bounds >> 32;
-        let length = bounds as u32 as u64;
-        let spgs_addr = machine.registers()[A4].to_u64();
-        let argc_addr = spgs_addr;
-        let argc = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(argc_addr))?
-            .to_u64();
-        let argv_addr_addr = spgs_addr.wrapping_add(8);
-        let argv_addr = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(argv_addr_addr))?
-            .to_u64();
-        let mut addr = argv_addr;
-        let mut argv = Vec::new();
-        for _ in 0..argc {
-            let target_addr = machine
-                .memory_mut()
-                .load64(&Mac::REG::from_u64(addr))?
-                .to_u64();
-            let cstr = load_c_string(machine, target_addr)?;
-            argv.push(cstr);
-            addr = addr.wrapping_add(8);
-        }
-
-        let process_id_addr_addr = spgs_addr.wrapping_add(16);
-        let process_id_addr = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(process_id_addr_addr))?
-            .to_u64();
-        let pipes_addr_addr = spgs_addr.wrapping_add(24);
-        let mut pipes_addr = machine
-            .memory_mut()
-            .load64(&Mac::REG::from_u64(pipes_addr_addr))?
-            .to_u64();
-
-        let mut pipes = vec![];
-        if pipes_addr != 0 {
-            loop {
-                let pipe = machine
-                    .memory_mut()
-                    .load64(&Mac::REG::from_u64(pipes_addr))?
-                    .to_u64();
-                if pipe == 0 {
-                    break;
-                }
-                pipes.push(PipeId(pipe));
-                pipes_addr += 8;
-            }
-        }
-
-        // We are fetching the actual cell here for some in-place validation
-        let sc = self
-            .snapshot2_context()
-            .lock()
-            .map_err(|e| Error::Unexpected(e.to_string()))?;
-        let (_, full_length) = match sc.data_source().load_data(&data_piece_id, 0, 0) {
-            Ok(val) => val,
-            Err(Error::External(m)) if m == "INDEX_OUT_OF_BOUND" => {
-                // This comes from TxData results in an out of bound error, to
-                // mimic current behavior, we would return INDEX_OUT_OF_BOUND error.
-                machine.set_register(A0, Mac::REG::from_u8(INDEX_OUT_OF_BOUND));
-                return Ok(());
-            }
-            Err(e) => return Err(e),
-        };
-        if offset >= full_length {
-            machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
-            return Ok(());
-        }
-        if length > 0 {
-            let end = offset.checked_add(length).ok_or(Error::MemOutOfBound)?;
-            if end > full_length {
-                machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
-                return Ok(());
-            }
-        }
-        machine.add_cycles_no_checking(SPAWN_EXTRA_CYCLES_BASE)?;
-        machine.add_cycles_no_checking(transferred_byte_cycles(full_length))?;
-        self.message_box
-            .lock()
-            .map_err(|e| Error::Unexpected(e.to_string()))?
-            .push(Message::Spawn(
-                self.id,
-                SpawnArgs {
-                    data_piece_id,
-                    offset,
-                    length,
-                    argv,
-                    pipes,
-                    process_id_addr,
-                },
-            ));
-        Err(Error::External("YIELD".to_string()))
-    }
 }
 
 impl<Mac: SupportMachine, DL> Syscalls<Mac> for MachineContext<DL>
@@ -323,15 +214,6 @@ where
             2091 => self.load_cell_data_as_code(machine),
             2092 => self.load_cell_data(machine),
             2177 => self.debug(machine),
-            // The syscall numbers here are picked intentionally to be different
-            // than currently assigned syscall numbers for spawn calls
-            2601 => {
-                if self.script_version >= ScriptVersion::V2 {
-                    self.spawn(machine)
-                } else {
-                    return Ok(false);
-                }
-            }
             _ => return Ok(false),
         }?;
         Ok(true)
@@ -357,22 +239,3 @@ pub(crate) const SLICE_OUT_OF_BOUND: u8 = 3;
 pub(crate) const WAIT_FAILURE: u8 = 5;
 pub(crate) const INVALID_PIPE: u8 = 6;
 pub(crate) const OTHER_END_CLOSED: u8 = 7;
-
-fn load_c_string<Mac: SupportMachine>(machine: &mut Mac, addr: u64) -> Result<Bytes, Error> {
-    let mut buffer = Vec::new();
-    let mut addr = addr;
-
-    loop {
-        let byte = machine
-            .memory_mut()
-            .load8(&Mac::REG::from_u64(addr))?
-            .to_u8();
-        if byte == 0 {
-            break;
-        }
-        buffer.push(byte);
-        addr += 1;
-    }
-
-    Ok(Bytes::from(buffer))
-}

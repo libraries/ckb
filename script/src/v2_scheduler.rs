@@ -15,6 +15,7 @@ use crate::{
 use crate::{ScriptVersion, TransactionScriptsVerifier};
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::Cycle;
+use ckb_vm::snapshot2::Snapshot2Context;
 use ckb_vm::{
     bytes::Bytes,
     cost_model::estimate_cycles,
@@ -780,9 +781,12 @@ where
 
         let mut syscalls_generator = self.syscalls_generator.clone();
         syscalls_generator.vm_id = *id;
+        syscalls_generator.snapshot2_context =
+            Arc::new(Mutex::new(Snapshot2Context::new(self.tx_data.clone())));
         let mut machine_context =
             MachineContext::new(*id, self.message_box.clone(), self.tx_data.clone(), version);
         machine_context.base_cycles = Arc::clone(&self.syscalls_generator.base_cycles);
+        machine_context.snapshot2_context = syscalls_generator.snapshot2_context.clone();
 
         let machine_builder = DefaultMachineBuilder::new(core_machine)
             .instruction_cycle_func(Box::new(estimate_cycles))
@@ -792,7 +796,7 @@ where
             // we can override load_cell_data syscall with a new implementation.
             .syscall(Box::new(machine_context.clone()));
         let machine_builder = syscalls_generator
-            .generate_root_syscalls(version, &self.tx_data.script_group, Default::default())
+            .generate_same_syscalls(version, &self.tx_data.script_group)
             .into_iter()
             .fold(machine_builder, |builder, syscall| builder.syscall(syscall));
         let default_machine = machine_builder.build();
