@@ -1,12 +1,11 @@
 #include "utils.h"
 
-int parent_simple_read_write() {
+int parent_simple_read_write(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t pid = 0;
 
-    err = full_spawn(0, 1, argv, fds, &pid);
+    err = full_spawn(0, 1, argv, fds, pid);
     // write
     uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     for (size_t i = 0; i < 7; i++) {
@@ -26,7 +25,6 @@ int parent_simple_read_write() {
             CHECK2(block[j] == 0xFF, -2);
         }
     }
-    printf("simple_read_write case passed for parent");
 exit:
     return err;
 }
@@ -55,17 +53,15 @@ int child_simple_read_write() {
         CHECK(err);
         CHECK2(actual_length == sizeof(block), -2);
     }
-    printf("simple_read_write case passed for child");
 exit:
     return err;
 }
 
-int parent_write_dead_lock() {
+int parent_write_dead_lock(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t pid = 0;
-    err = full_spawn(0, 1, argv, fds, &pid);
+    err = full_spawn(0, 1, argv, fds, pid);
     CHECK(err);
     uint8_t data[10];
     size_t data_length = sizeof(data);
@@ -90,7 +86,7 @@ exit:
     return err;
 }
 
-int parent_invalid_fd() {
+int parent_invalid_fd(uint64_t* pid) {
     uint64_t invalid_fd = 0xff;
     uint8_t data[4];
     size_t data_length = sizeof(data);
@@ -110,9 +106,8 @@ int parent_invalid_fd() {
 
     // pass fd to child to make it invalid
     const char* argv[] = {"", 0};
-    uint64_t pid = 0;
     uint64_t inherited_fds[2] = {fds[0], 0};
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = inherited_fds};
+    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = inherited_fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK(err);
     err = ckb_read(fds[0], data, &data_length);
@@ -138,15 +133,11 @@ exit:
     return err;
 }
 
-int parent_wait_dead_lock() {
+int parent_wait_dead_lock(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t pid = 0;
-    err = full_spawn(0, 1, argv, fds, &pid);
-    CHECK(err);
-    int8_t exit_code = 0;
-    err = ckb_wait(pid, &exit_code);
+    err = full_spawn(0, 1, argv, fds, pid);
     CHECK(err);
 
 exit:
@@ -159,12 +150,11 @@ int child_wait_dead_lock() {
     return ckb_wait(pid, &exit_code);
 }
 
-int parent_read_write_with_close() {
+int parent_read_write_with_close(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t pid = 0;
-    err = full_spawn(0, 1, argv, fds, &pid);
+    err = full_spawn(0, 1, argv, fds, pid);
     // write util the other end is closed
     uint8_t block[100];
     for (size_t i = 0; i < sizeof(block); i++) {
@@ -203,35 +193,37 @@ exit:
     return err;
 }
 
-int parent_wait_multiple() {
+int parent_wait_multiple(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
     uint64_t fds[2] = {0};
-    uint64_t pid = 0;
-    full_spawn(0, 1, argv, fds, &pid);
+    full_spawn(0, 1, argv, fds, pid);
     CHECK(err);
 
     int8_t exit_code = 0;
-    err = ckb_wait(pid, &exit_code);
+    err = ckb_wait(*pid, &exit_code);
     CHECK(err);
     // second wait is not allowed
-    err = ckb_wait(pid, &exit_code);
+    err = ckb_wait(*pid, &exit_code);
     CHECK2(err != 0, -2);
     err = 0;
+    // spawn a new valid one, make ckb_wait happy
+    full_spawn(0, 1, argv, fds, pid);
+    CHECK(err);
+
 exit:
     return err;
 }
 
-int parent_inherited_fds() {
+int parent_inherited_fds(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
-    uint64_t pid = 0;
     uint64_t inherited_fds[11] = {0};
     for (size_t i = 0; i < 5; i++) {
         err = ckb_pipe(&inherited_fds[i * 2]);
         CHECK(err);
     }
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = inherited_fds};
+    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = inherited_fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK(err);
 exit:
@@ -271,13 +263,12 @@ exit:
     return err;
 }
 
-int parent_inherited_fds_without_owner() {
+int parent_inherited_fds_without_owner(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
-    uint64_t pid = 0;
     uint64_t fds[3] = {0xFF, 0xEF, 0};
 
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = &pid, .inherited_fds = fds};
+    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK2(err == CKB_INVALID_PIPE, -2);
 
@@ -296,12 +287,11 @@ exit:
     return err;
 }
 
-int parent_read_then_close() {
+int parent_read_then_close(uint64_t* pid) {
     int err = 0;
     const char* argv[] = {"", 0};
-    uint64_t pid = 0;
     uint64_t fds[2] = {0};
-    err = full_spawn(0, 1, argv, fds, &pid);
+    err = full_spawn(0, 1, argv, fds, pid);
     CHECK(err);
     err = ckb_close(fds[CKB_STDOUT]);
     CHECK(err);
@@ -319,33 +309,43 @@ int child_read_then_close() {
     size_t data_len = sizeof(data);
     err = ckb_read(fds[CKB_STDIN], data, &data_len);
     CHECK2(err == CKB_OTHER_END_CLOSED, -2);
-
+    err = 0;
 exit:
     return err;
 }
 
 int parent_entry(int case_id) {
+    int err = 0;
+    uint64_t pid = 0;
     if (case_id == 1) {
-        return parent_simple_read_write();
+        err = parent_simple_read_write(&pid);
     } else if (case_id == 2) {
-        return parent_write_dead_lock();
+        err = parent_write_dead_lock(&pid);
     } else if (case_id == 3) {
-        return parent_invalid_fd();
+        err = parent_invalid_fd(&pid);
     } else if (case_id == 4) {
-        return parent_wait_dead_lock();
+        err = parent_wait_dead_lock(&pid);
     } else if (case_id == 5) {
-        return parent_read_write_with_close();
+        err = parent_read_write_with_close(&pid);
     } else if (case_id == 6) {
-        return parent_wait_multiple();
+        err = parent_wait_multiple(&pid);
     } else if (case_id == 7) {
-        return parent_inherited_fds();
+        err = parent_inherited_fds(&pid);
     } else if (case_id == 8) {
-        return parent_inherited_fds_without_owner();
+        err = parent_inherited_fds_without_owner(&pid);
     } else if (case_id == 9) {
-        return parent_read_then_close();
+        err = parent_read_then_close(&pid);
     } else {
-        return -1;
+        CHECK2(false, -2);
     }
+    CHECK(err);
+    int8_t exit_code = 0;
+    err = ckb_wait(pid, &exit_code);
+    CHECK(err);
+    CHECK(exit_code);
+
+exit:
+    return err;
 }
 
 int child_entry(int case_id) {
