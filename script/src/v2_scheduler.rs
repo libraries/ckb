@@ -117,7 +117,7 @@ where
             tx_data,
             script_version,
             syscalls_generator,
-            max_vms_count: full.max_vm_count,
+            max_vms_count: full.max_vms_count,
             total_cycles: full.total_cycles,
             next_vm_id: full.next_vm_id,
             next_pipe_slot: full.next_pipe_slot,
@@ -152,7 +152,7 @@ where
             vms.push((id, state, snapshot));
         }
         Ok(FullSuspendedState {
-            max_vm_count: self.max_vms_count,
+            max_vms_count: self.max_vms_count,
             total_cycles: self.total_cycles,
             next_vm_id: self.next_vm_id,
             next_pipe_slot: self.next_pipe_slot,
