@@ -58,7 +58,7 @@ where
     next_vm_id: VmId,
     next_fd_slot: u64,
     states: BTreeMap<VmId, VmState>,
-    pipes: BTreeMap<FdId, VmId>,
+    fds: BTreeMap<FdId, VmId>,
     inherited_fd: BTreeMap<VmId, Vec<FdId>>,
     instantiated: BTreeMap<VmId, (MachineContext<DL>, Machine)>,
     suspended: BTreeMap<VmId, Snapshot2<DataPieceId>>,

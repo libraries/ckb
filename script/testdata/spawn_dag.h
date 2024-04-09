@@ -6,15 +6,15 @@
 #include "molecule_reader.h"
 #include "molecule_builder.h"
 
-#ifndef DAG_H
-#define DAG_H
+#ifndef SPAWN_DAG_H
+#define SPAWN_DAG_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 #ifndef MOLECULE_API_DECORATOR
-#define __DEFINE_MOLECULE_API_DECORATOR_DAG
+#define __DEFINE_MOLECULE_API_DECORATOR_SPAWN_DAG
 #define MOLECULE_API_DECORATOR
 #endif /* MOLECULE_API_DECORATOR */
 
@@ -31,56 +31,60 @@ extern "C" {
 #define MolReader_VmIndex_get_nth5(s) mol_slice_by_offset(s, 5, 1)
 #define MolReader_VmIndex_get_nth6(s) mol_slice_by_offset(s, 6, 1)
 #define MolReader_VmIndex_get_nth7(s) mol_slice_by_offset(s, 7, 1)
-#define MolReader_PipeIndex_verify(s, c) mol_verify_fixed_size(s, 8)
-#define MolReader_PipeIndex_get_nth0(s) mol_slice_by_offset(s, 0, 1)
-#define MolReader_PipeIndex_get_nth1(s) mol_slice_by_offset(s, 1, 1)
-#define MolReader_PipeIndex_get_nth2(s) mol_slice_by_offset(s, 2, 1)
-#define MolReader_PipeIndex_get_nth3(s) mol_slice_by_offset(s, 3, 1)
-#define MolReader_PipeIndex_get_nth4(s) mol_slice_by_offset(s, 4, 1)
-#define MolReader_PipeIndex_get_nth5(s) mol_slice_by_offset(s, 5, 1)
-#define MolReader_PipeIndex_get_nth6(s) mol_slice_by_offset(s, 6, 1)
-#define MolReader_PipeIndex_get_nth7(s) mol_slice_by_offset(s, 7, 1)
-#define MolReader_PipeIndices_verify(s, c) mol_fixvec_verify(s, 8)
-#define MolReader_PipeIndices_length(s) mol_fixvec_length(s)
-#define MolReader_PipeIndices_get(s, i) mol_fixvec_slice_by_index(s, 8, i)
+#define MolReader_FdIndex_verify(s, c) mol_verify_fixed_size(s, 8)
+#define MolReader_FdIndex_get_nth0(s) mol_slice_by_offset(s, 0, 1)
+#define MolReader_FdIndex_get_nth1(s) mol_slice_by_offset(s, 1, 1)
+#define MolReader_FdIndex_get_nth2(s) mol_slice_by_offset(s, 2, 1)
+#define MolReader_FdIndex_get_nth3(s) mol_slice_by_offset(s, 3, 1)
+#define MolReader_FdIndex_get_nth4(s) mol_slice_by_offset(s, 4, 1)
+#define MolReader_FdIndex_get_nth5(s) mol_slice_by_offset(s, 5, 1)
+#define MolReader_FdIndex_get_nth6(s) mol_slice_by_offset(s, 6, 1)
+#define MolReader_FdIndex_get_nth7(s) mol_slice_by_offset(s, 7, 1)
+#define MolReader_FdIndices_verify(s, c) mol_fixvec_verify(s, 8)
+#define MolReader_FdIndices_length(s) mol_fixvec_length(s)
+#define MolReader_FdIndices_get(s, i) mol_fixvec_slice_by_index(s, 8, i)
 #define MolReader_Bytes_verify(s, c) mol_fixvec_verify(s, 1)
 #define MolReader_Bytes_length(s) mol_fixvec_length(s)
 #define MolReader_Bytes_get(s, i) mol_fixvec_slice_by_index(s, 1, i)
 #define MolReader_Bytes_raw_bytes(s) mol_fixvec_slice_raw_bytes(s)
-MOLECULE_API_DECORATOR mol_errno MolReader_Pipe_verify(const mol_seg_t *, bool);
-#define MolReader_Pipe_actual_field_count(s) mol_table_actual_field_count(s)
-#define MolReader_Pipe_has_extra_fields(s) mol_table_has_extra_fields(s, 3)
-#define MolReader_Pipe_get_vm(s) mol_table_slice_by_index(s, 0)
-#define MolReader_Pipe_get_read_pipe(s) mol_table_slice_by_index(s, 1)
-#define MolReader_Pipe_get_write_pipe(s) mol_table_slice_by_index(s, 2)
-MOLECULE_API_DECORATOR mol_errno MolReader_Pipes_verify(const mol_seg_t *, bool);
-#define MolReader_Pipes_length(s) mol_dynvec_length(s)
-#define MolReader_Pipes_get(s, i) mol_dynvec_slice_by_index(s, i)
-MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *, bool);
+MOLECULE_API_DECORATOR mol_errno MolReader_Fd_verify(const mol_seg_t *, bool);
+#define MolReader_Fd_actual_field_count(s) mol_table_actual_field_count(s)
+#define MolReader_Fd_has_extra_fields(s) mol_table_has_extra_fields(s, 3)
+#define MolReader_Fd_get_vm(s) mol_table_slice_by_index(s, 0)
+#define MolReader_Fd_get_read_fd(s) mol_table_slice_by_index(s, 1)
+#define MolReader_Fd_get_write_fd(s) mol_table_slice_by_index(s, 2)
+MOLECULE_API_DECORATOR mol_errno MolReader_Fds_verify(const mol_seg_t *, bool);
+#define MolReader_Fds_length(s) mol_dynvec_length(s)
+#define MolReader_Fds_get(s, i) mol_dynvec_slice_by_index(s, i)
+MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *,
+                                                        bool);
 #define MolReader_Write_actual_field_count(s) mol_table_actual_field_count(s)
 #define MolReader_Write_has_extra_fields(s) mol_table_has_extra_fields(s, 5)
 #define MolReader_Write_get_from(s) mol_table_slice_by_index(s, 0)
-#define MolReader_Write_get_from_pipe(s) mol_table_slice_by_index(s, 1)
+#define MolReader_Write_get_from_fd(s) mol_table_slice_by_index(s, 1)
 #define MolReader_Write_get_to(s) mol_table_slice_by_index(s, 2)
-#define MolReader_Write_get_to_pipe(s) mol_table_slice_by_index(s, 3)
+#define MolReader_Write_get_to_fd(s) mol_table_slice_by_index(s, 3)
 #define MolReader_Write_get_data(s) mol_table_slice_by_index(s, 4)
-MOLECULE_API_DECORATOR mol_errno MolReader_Writes_verify(const mol_seg_t *, bool);
+MOLECULE_API_DECORATOR mol_errno MolReader_Writes_verify(const mol_seg_t *,
+                                                         bool);
 #define MolReader_Writes_length(s) mol_dynvec_length(s)
 #define MolReader_Writes_get(s, i) mol_dynvec_slice_by_index(s, i)
-MOLECULE_API_DECORATOR mol_errno MolReader_Spawn_verify(const mol_seg_t *, bool);
+MOLECULE_API_DECORATOR mol_errno MolReader_Spawn_verify(const mol_seg_t *,
+                                                        bool);
 #define MolReader_Spawn_actual_field_count(s) mol_table_actual_field_count(s)
 #define MolReader_Spawn_has_extra_fields(s) mol_table_has_extra_fields(s, 3)
 #define MolReader_Spawn_get_from(s) mol_table_slice_by_index(s, 0)
 #define MolReader_Spawn_get_child(s) mol_table_slice_by_index(s, 1)
-#define MolReader_Spawn_get_pipes(s) mol_table_slice_by_index(s, 2)
-MOLECULE_API_DECORATOR mol_errno MolReader_Spawns_verify(const mol_seg_t *, bool);
+#define MolReader_Spawn_get_fds(s) mol_table_slice_by_index(s, 2)
+MOLECULE_API_DECORATOR mol_errno MolReader_Spawns_verify(const mol_seg_t *,
+                                                         bool);
 #define MolReader_Spawns_length(s) mol_dynvec_length(s)
 #define MolReader_Spawns_get(s, i) mol_dynvec_slice_by_index(s, i)
 MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *, bool);
 #define MolReader_Data_actual_field_count(s) mol_table_actual_field_count(s)
 #define MolReader_Data_has_extra_fields(s) mol_table_has_extra_fields(s, 3)
 #define MolReader_Data_get_spawns(s) mol_table_slice_by_index(s, 0)
-#define MolReader_Data_get_pipes(s) mol_table_slice_by_index(s, 1)
+#define MolReader_Data_get_fds(s) mol_table_slice_by_index(s, 1)
 #define MolReader_Data_get_writes(s) mol_table_slice_by_index(s, 2)
 
 /*
@@ -88,70 +92,88 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *, bool);
  */
 
 #define MolBuilder_VmIndex_init(b) mol_builder_initialize_fixed_size(b, 8)
-#define MolBuilder_VmIndex_set_nth0(b, p) mol_builder_set_byte_by_offset(b, 0, p)
-#define MolBuilder_VmIndex_set_nth1(b, p) mol_builder_set_byte_by_offset(b, 1, p)
-#define MolBuilder_VmIndex_set_nth2(b, p) mol_builder_set_byte_by_offset(b, 2, p)
-#define MolBuilder_VmIndex_set_nth3(b, p) mol_builder_set_byte_by_offset(b, 3, p)
-#define MolBuilder_VmIndex_set_nth4(b, p) mol_builder_set_byte_by_offset(b, 4, p)
-#define MolBuilder_VmIndex_set_nth5(b, p) mol_builder_set_byte_by_offset(b, 5, p)
-#define MolBuilder_VmIndex_set_nth6(b, p) mol_builder_set_byte_by_offset(b, 6, p)
-#define MolBuilder_VmIndex_set_nth7(b, p) mol_builder_set_byte_by_offset(b, 7, p)
+#define MolBuilder_VmIndex_set_nth0(b, p) \
+    mol_builder_set_byte_by_offset(b, 0, p)
+#define MolBuilder_VmIndex_set_nth1(b, p) \
+    mol_builder_set_byte_by_offset(b, 1, p)
+#define MolBuilder_VmIndex_set_nth2(b, p) \
+    mol_builder_set_byte_by_offset(b, 2, p)
+#define MolBuilder_VmIndex_set_nth3(b, p) \
+    mol_builder_set_byte_by_offset(b, 3, p)
+#define MolBuilder_VmIndex_set_nth4(b, p) \
+    mol_builder_set_byte_by_offset(b, 4, p)
+#define MolBuilder_VmIndex_set_nth5(b, p) \
+    mol_builder_set_byte_by_offset(b, 5, p)
+#define MolBuilder_VmIndex_set_nth6(b, p) \
+    mol_builder_set_byte_by_offset(b, 6, p)
+#define MolBuilder_VmIndex_set_nth7(b, p) \
+    mol_builder_set_byte_by_offset(b, 7, p)
 #define MolBuilder_VmIndex_build(b) mol_builder_finalize_simple(b)
 #define MolBuilder_VmIndex_clear(b) mol_builder_discard(b)
-#define MolBuilder_PipeIndex_init(b) mol_builder_initialize_fixed_size(b, 8)
-#define MolBuilder_PipeIndex_set_nth0(b, p) mol_builder_set_byte_by_offset(b, 0, p)
-#define MolBuilder_PipeIndex_set_nth1(b, p) mol_builder_set_byte_by_offset(b, 1, p)
-#define MolBuilder_PipeIndex_set_nth2(b, p) mol_builder_set_byte_by_offset(b, 2, p)
-#define MolBuilder_PipeIndex_set_nth3(b, p) mol_builder_set_byte_by_offset(b, 3, p)
-#define MolBuilder_PipeIndex_set_nth4(b, p) mol_builder_set_byte_by_offset(b, 4, p)
-#define MolBuilder_PipeIndex_set_nth5(b, p) mol_builder_set_byte_by_offset(b, 5, p)
-#define MolBuilder_PipeIndex_set_nth6(b, p) mol_builder_set_byte_by_offset(b, 6, p)
-#define MolBuilder_PipeIndex_set_nth7(b, p) mol_builder_set_byte_by_offset(b, 7, p)
-#define MolBuilder_PipeIndex_build(b) mol_builder_finalize_simple(b)
-#define MolBuilder_PipeIndex_clear(b) mol_builder_discard(b)
-#define MolBuilder_PipeIndices_init(b) mol_fixvec_builder_initialize(b, 128)
-#define MolBuilder_PipeIndices_push(b, p) mol_fixvec_builder_push(b, p, 8)
-#define MolBuilder_PipeIndices_build(b) mol_fixvec_builder_finalize(b)
-#define MolBuilder_PipeIndices_clear(b) mol_builder_discard(b)
+#define MolBuilder_FdIndex_init(b) mol_builder_initialize_fixed_size(b, 8)
+#define MolBuilder_FdIndex_set_nth0(b, p) \
+    mol_builder_set_byte_by_offset(b, 0, p)
+#define MolBuilder_FdIndex_set_nth1(b, p) \
+    mol_builder_set_byte_by_offset(b, 1, p)
+#define MolBuilder_FdIndex_set_nth2(b, p) \
+    mol_builder_set_byte_by_offset(b, 2, p)
+#define MolBuilder_FdIndex_set_nth3(b, p) \
+    mol_builder_set_byte_by_offset(b, 3, p)
+#define MolBuilder_FdIndex_set_nth4(b, p) \
+    mol_builder_set_byte_by_offset(b, 4, p)
+#define MolBuilder_FdIndex_set_nth5(b, p) \
+    mol_builder_set_byte_by_offset(b, 5, p)
+#define MolBuilder_FdIndex_set_nth6(b, p) \
+    mol_builder_set_byte_by_offset(b, 6, p)
+#define MolBuilder_FdIndex_set_nth7(b, p) \
+    mol_builder_set_byte_by_offset(b, 7, p)
+#define MolBuilder_FdIndex_build(b) mol_builder_finalize_simple(b)
+#define MolBuilder_FdIndex_clear(b) mol_builder_discard(b)
+#define MolBuilder_FdIndices_init(b) mol_fixvec_builder_initialize(b, 128)
+#define MolBuilder_FdIndices_push(b, p) mol_fixvec_builder_push(b, p, 8)
+#define MolBuilder_FdIndices_build(b) mol_fixvec_builder_finalize(b)
+#define MolBuilder_FdIndices_clear(b) mol_builder_discard(b)
 #define MolBuilder_Bytes_init(b) mol_fixvec_builder_initialize(b, 16)
 #define MolBuilder_Bytes_push(b, p) mol_fixvec_builder_push_byte(b, p)
 #define MolBuilder_Bytes_build(b) mol_fixvec_builder_finalize(b)
 #define MolBuilder_Bytes_clear(b) mol_builder_discard(b)
-#define MolBuilder_Pipe_init(b) mol_table_builder_initialize(b, 256, 3)
-#define MolBuilder_Pipe_set_vm(b, p, l) mol_table_builder_add(b, 0, p, l)
-#define MolBuilder_Pipe_set_read_pipe(b, p, l) mol_table_builder_add(b, 1, p, l)
-#define MolBuilder_Pipe_set_write_pipe(b, p, l) mol_table_builder_add(b, 2, p, l)
-MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Pipe_build(mol_builder_t);
-#define MolBuilder_Pipe_clear(b) mol_builder_discard(b)
-#define MolBuilder_Pipes_init(b) mol_builder_initialize_with_capacity(b, 1024, 64)
-#define MolBuilder_Pipes_push(b, p, l) mol_dynvec_builder_push(b, p, l)
-#define MolBuilder_Pipes_build(b) mol_dynvec_builder_finalize(b)
-#define MolBuilder_Pipes_clear(b) mol_builder_discard(b)
+#define MolBuilder_Fd_init(b) mol_table_builder_initialize(b, 256, 3)
+#define MolBuilder_Fd_set_vm(b, p, l) mol_table_builder_add(b, 0, p, l)
+#define MolBuilder_Fd_set_read_fd(b, p, l) mol_table_builder_add(b, 1, p, l)
+#define MolBuilder_Fd_set_write_fd(b, p, l) mol_table_builder_add(b, 2, p, l)
+MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Fd_build(mol_builder_t);
+#define MolBuilder_Fd_clear(b) mol_builder_discard(b)
+#define MolBuilder_Fds_init(b) mol_builder_initialize_with_capacity(b, 1024, 64)
+#define MolBuilder_Fds_push(b, p, l) mol_dynvec_builder_push(b, p, l)
+#define MolBuilder_Fds_build(b) mol_dynvec_builder_finalize(b)
+#define MolBuilder_Fds_clear(b) mol_builder_discard(b)
 #define MolBuilder_Write_init(b) mol_table_builder_initialize(b, 256, 5)
 #define MolBuilder_Write_set_from(b, p, l) mol_table_builder_add(b, 0, p, l)
-#define MolBuilder_Write_set_from_pipe(b, p, l) mol_table_builder_add(b, 1, p, l)
+#define MolBuilder_Write_set_from_fd(b, p, l) mol_table_builder_add(b, 1, p, l)
 #define MolBuilder_Write_set_to(b, p, l) mol_table_builder_add(b, 2, p, l)
-#define MolBuilder_Write_set_to_pipe(b, p, l) mol_table_builder_add(b, 3, p, l)
+#define MolBuilder_Write_set_to_fd(b, p, l) mol_table_builder_add(b, 3, p, l)
 #define MolBuilder_Write_set_data(b, p, l) mol_table_builder_add(b, 4, p, l)
 MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Write_build(mol_builder_t);
 #define MolBuilder_Write_clear(b) mol_builder_discard(b)
-#define MolBuilder_Writes_init(b) mol_builder_initialize_with_capacity(b, 1024, 64)
+#define MolBuilder_Writes_init(b) \
+    mol_builder_initialize_with_capacity(b, 1024, 64)
 #define MolBuilder_Writes_push(b, p, l) mol_dynvec_builder_push(b, p, l)
 #define MolBuilder_Writes_build(b) mol_dynvec_builder_finalize(b)
 #define MolBuilder_Writes_clear(b) mol_builder_discard(b)
 #define MolBuilder_Spawn_init(b) mol_table_builder_initialize(b, 256, 3)
 #define MolBuilder_Spawn_set_from(b, p, l) mol_table_builder_add(b, 0, p, l)
 #define MolBuilder_Spawn_set_child(b, p, l) mol_table_builder_add(b, 1, p, l)
-#define MolBuilder_Spawn_set_pipes(b, p, l) mol_table_builder_add(b, 2, p, l)
+#define MolBuilder_Spawn_set_fds(b, p, l) mol_table_builder_add(b, 2, p, l)
 MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Spawn_build(mol_builder_t);
 #define MolBuilder_Spawn_clear(b) mol_builder_discard(b)
-#define MolBuilder_Spawns_init(b) mol_builder_initialize_with_capacity(b, 1024, 64)
+#define MolBuilder_Spawns_init(b) \
+    mol_builder_initialize_with_capacity(b, 1024, 64)
 #define MolBuilder_Spawns_push(b, p, l) mol_dynvec_builder_push(b, p, l)
 #define MolBuilder_Spawns_build(b) mol_dynvec_builder_finalize(b)
 #define MolBuilder_Spawns_clear(b) mol_builder_discard(b)
 #define MolBuilder_Data_init(b) mol_table_builder_initialize(b, 128, 3)
 #define MolBuilder_Data_set_spawns(b, p, l) mol_table_builder_add(b, 0, p, l)
-#define MolBuilder_Data_set_pipes(b, p, l) mol_table_builder_add(b, 1, p, l)
+#define MolBuilder_Data_set_fds(b, p, l) mol_table_builder_add(b, 1, p, l)
 #define MolBuilder_Data_set_writes(b, p, l) mol_table_builder_add(b, 2, p, l)
 MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Data_build(mol_builder_t);
 #define MolBuilder_Data_clear(b) mol_builder_discard(b)
@@ -165,32 +187,41 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Data_build(mol_builder_t);
 MOLECULE_API_DECORATOR const uint8_t MolDefault_VmIndex[8] = {
     ____, ____, ____, ____, ____, ____, ____, ____,
 };
-MOLECULE_API_DECORATOR const uint8_t MolDefault_PipeIndex[8] = {
+MOLECULE_API_DECORATOR const uint8_t MolDefault_FdIndex[8] = {
     ____, ____, ____, ____, ____, ____, ____, ____,
 };
-MOLECULE_API_DECORATOR const uint8_t MolDefault_PipeIndices[4] = {____, ____, ____, ____};
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Bytes[4] = {____, ____, ____, ____};
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Pipe[40] = {
-    0x28, ____, ____, ____, 0x10, ____, ____, ____, 0x18, ____, ____, ____, 0x20, ____,
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+MOLECULE_API_DECORATOR const uint8_t MolDefault_FdIndices[4] = {____, ____,
+                                                                ____, ____};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Bytes[4] = {____, ____, ____,
+                                                            ____};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Fd[40] = {
+    0x28, ____, ____, ____, 0x10, ____, ____, ____, 0x18, ____,
+    ____, ____, 0x20, ____, ____, ____, ____, ____, ____, ____,
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Fds[4] = {0x04, ____, ____,
+                                                          ____};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Write[60] = {
+    0x3c, ____, ____, ____, 0x18, ____, ____, ____, 0x20, ____, ____, ____,
+    0x28, ____, ____, ____, 0x30, ____, ____, ____, 0x38, ____, ____, ____,
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
 };
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Pipes[4] = {0x04, ____, ____, ____};
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Write[60] = {
-    0x3c, ____, ____, ____, 0x18, ____, ____, ____, 0x20, ____, ____, ____, 0x28, ____, ____,
-    ____, 0x30, ____, ____, ____, 0x38, ____, ____, ____, ____, ____, ____, ____, ____, ____,
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
-};
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Writes[4] = {0x04, ____, ____, ____};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Writes[4] = {0x04, ____, ____,
+                                                             ____};
 MOLECULE_API_DECORATOR const uint8_t MolDefault_Spawn[36] = {
-    0x24, ____, ____, ____, 0x10, ____, ____, ____, 0x18, ____, ____, ____, 0x20, ____, ____, ____, ____, ____,
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+    0x24, ____, ____, ____, 0x10, ____, ____, ____, 0x18, ____, ____, ____,
+    0x20, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
 };
-MOLECULE_API_DECORATOR const uint8_t MolDefault_Spawns[4] = {0x04, ____, ____, ____};
+MOLECULE_API_DECORATOR const uint8_t MolDefault_Spawns[4] = {0x04, ____, ____,
+                                                             ____};
 MOLECULE_API_DECORATOR const uint8_t MolDefault_Data[28] = {
-    0x1c, ____, ____, ____, 0x10, ____, ____, ____, 0x14, ____, ____, ____, 0x18, ____,
-    ____, ____, 0x04, ____, ____, ____, 0x04, ____, ____, ____, 0x04, ____, ____, ____,
+    0x1c, ____, ____, ____, 0x10, ____, ____, ____, 0x14, ____,
+    ____, ____, 0x18, ____, ____, ____, 0x04, ____, ____, ____,
+    0x04, ____, ____, ____, 0x04, ____, ____, ____,
 };
 
 #undef ____
@@ -199,7 +230,8 @@ MOLECULE_API_DECORATOR const uint8_t MolDefault_Data[28] = {
  * Reader Functions
  */
 
-MOLECULE_API_DECORATOR mol_errno MolReader_Pipe_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Fd_verify(const mol_seg_t *input,
+                                                     bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -248,19 +280,20 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Pipe_verify(const mol_seg_t *input, b
     }
     inner.ptr = input->ptr + offsets[1];
     inner.size = offsets[2] - offsets[1];
-    errno = MolReader_PipeIndex_verify(&inner, compatible);
+    errno = MolReader_FdIndex_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
     inner.ptr = input->ptr + offsets[2];
     inner.size = offsets[3] - offsets[2];
-    errno = MolReader_PipeIndex_verify(&inner, compatible);
+    errno = MolReader_FdIndex_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
     return MOL_OK;
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Pipes_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Fds_verify(const mol_seg_t *input,
+                                                      bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -294,7 +327,7 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Pipes_verify(const mol_seg_t *input, 
         mol_seg_t inner;
         inner.ptr = input->ptr + offset;
         inner.size = end - offset;
-        mol_errno errno = MolReader_Pipe_verify(&inner, compatible);
+        mol_errno errno = MolReader_Fd_verify(&inner, compatible);
         if (errno != MOL_OK) {
             return MOL_ERR_DATA;
         }
@@ -306,9 +339,10 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Pipes_verify(const mol_seg_t *input, 
     mol_seg_t inner;
     inner.ptr = input->ptr + offset;
     inner.size = total_size - offset;
-    return MolReader_Pipe_verify(&inner, compatible);
+    return MolReader_Fd_verify(&inner, compatible);
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *input,
+                                                        bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -357,7 +391,7 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *input, 
     }
     inner.ptr = input->ptr + offsets[1];
     inner.size = offsets[2] - offsets[1];
-    errno = MolReader_PipeIndex_verify(&inner, compatible);
+    errno = MolReader_FdIndex_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
@@ -369,7 +403,7 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *input, 
     }
     inner.ptr = input->ptr + offsets[3];
     inner.size = offsets[4] - offsets[3];
-    errno = MolReader_PipeIndex_verify(&inner, compatible);
+    errno = MolReader_FdIndex_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
@@ -381,7 +415,8 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Write_verify(const mol_seg_t *input, 
     }
     return MOL_OK;
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Writes_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Writes_verify(const mol_seg_t *input,
+                                                         bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -429,7 +464,8 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Writes_verify(const mol_seg_t *input,
     inner.size = total_size - offset;
     return MolReader_Write_verify(&inner, compatible);
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Spawn_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Spawn_verify(const mol_seg_t *input,
+                                                        bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -484,13 +520,14 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Spawn_verify(const mol_seg_t *input, 
     }
     inner.ptr = input->ptr + offsets[2];
     inner.size = offsets[3] - offsets[2];
-    errno = MolReader_PipeIndices_verify(&inner, compatible);
+    errno = MolReader_FdIndices_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
     return MOL_OK;
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Spawns_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Spawns_verify(const mol_seg_t *input,
+                                                         bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -538,7 +575,8 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Spawns_verify(const mol_seg_t *input,
     inner.size = total_size - offset;
     return MolReader_Spawn_verify(&inner, compatible);
 }
-MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *input, bool compatible) {
+MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *input,
+                                                       bool compatible) {
     if (input->size < MOL_NUM_T_SIZE) {
         return MOL_ERR_HEADER;
     }
@@ -587,7 +625,7 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *input, b
     }
     inner.ptr = input->ptr + offsets[1];
     inner.size = offsets[2] - offsets[1];
-    errno = MolReader_Pipes_verify(&inner, compatible);
+    errno = MolReader_Fds_verify(&inner, compatible);
     if (errno != MOL_OK) {
         return MOL_ERR_DATA;
     }
@@ -604,7 +642,8 @@ MOLECULE_API_DECORATOR mol_errno MolReader_Data_verify(const mol_seg_t *input, b
  * Builder Functions
  */
 
-MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Pipe_build(mol_builder_t builder) {
+MOLECULE_API_DECORATOR mol_seg_res_t
+MolBuilder_Fd_build(mol_builder_t builder) {
     mol_seg_res_t res;
     res.errno = MOL_OK;
     mol_num_t offset = 16;
@@ -645,7 +684,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Pipe_build(mol_builder_t builder
     len = builder.number_ptr[3];
     if (len == 0) {
         len = 8;
-        memcpy(dst, &MolDefault_PipeIndex, len);
+        memcpy(dst, &MolDefault_FdIndex, len);
     } else {
         mol_num_t of = builder.number_ptr[2];
         memcpy(dst, src + of, len);
@@ -654,7 +693,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Pipe_build(mol_builder_t builder
     len = builder.number_ptr[5];
     if (len == 0) {
         len = 8;
-        memcpy(dst, &MolDefault_PipeIndex, len);
+        memcpy(dst, &MolDefault_FdIndex, len);
     } else {
         mol_num_t of = builder.number_ptr[4];
         memcpy(dst, src + of, len);
@@ -663,7 +702,8 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Pipe_build(mol_builder_t builder
     mol_builder_discard(builder);
     return res;
 }
-MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Write_build(mol_builder_t builder) {
+MOLECULE_API_DECORATOR mol_seg_res_t
+MolBuilder_Write_build(mol_builder_t builder) {
     mol_seg_res_t res;
     res.errno = MOL_OK;
     mol_num_t offset = 24;
@@ -716,7 +756,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Write_build(mol_builder_t builde
     len = builder.number_ptr[3];
     if (len == 0) {
         len = 8;
-        memcpy(dst, &MolDefault_PipeIndex, len);
+        memcpy(dst, &MolDefault_FdIndex, len);
     } else {
         mol_num_t of = builder.number_ptr[2];
         memcpy(dst, src + of, len);
@@ -734,7 +774,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Write_build(mol_builder_t builde
     len = builder.number_ptr[7];
     if (len == 0) {
         len = 8;
-        memcpy(dst, &MolDefault_PipeIndex, len);
+        memcpy(dst, &MolDefault_FdIndex, len);
     } else {
         mol_num_t of = builder.number_ptr[6];
         memcpy(dst, src + of, len);
@@ -752,7 +792,8 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Write_build(mol_builder_t builde
     mol_builder_discard(builder);
     return res;
 }
-MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Spawn_build(mol_builder_t builder) {
+MOLECULE_API_DECORATOR mol_seg_res_t
+MolBuilder_Spawn_build(mol_builder_t builder) {
     mol_seg_res_t res;
     res.errno = MOL_OK;
     mol_num_t offset = 16;
@@ -802,7 +843,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Spawn_build(mol_builder_t builde
     len = builder.number_ptr[5];
     if (len == 0) {
         len = 4;
-        memcpy(dst, &MolDefault_PipeIndices, len);
+        memcpy(dst, &MolDefault_FdIndices, len);
     } else {
         mol_num_t of = builder.number_ptr[4];
         memcpy(dst, src + of, len);
@@ -811,7 +852,8 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Spawn_build(mol_builder_t builde
     mol_builder_discard(builder);
     return res;
 }
-MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Data_build(mol_builder_t builder) {
+MOLECULE_API_DECORATOR mol_seg_res_t
+MolBuilder_Data_build(mol_builder_t builder) {
     mol_seg_res_t res;
     res.errno = MOL_OK;
     mol_num_t offset = 16;
@@ -852,7 +894,7 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Data_build(mol_builder_t builder
     len = builder.number_ptr[3];
     if (len == 0) {
         len = 4;
-        memcpy(dst, &MolDefault_Pipes, len);
+        memcpy(dst, &MolDefault_Fds, len);
     } else {
         mol_num_t of = builder.number_ptr[2];
         memcpy(dst, src + of, len);
@@ -871,13 +913,13 @@ MOLECULE_API_DECORATOR mol_seg_res_t MolBuilder_Data_build(mol_builder_t builder
     return res;
 }
 
-#ifdef __DEFINE_MOLECULE_API_DECORATOR_DAG
+#ifdef __DEFINE_MOLECULE_API_DECORATOR_SPAWN_DAG
 #undef MOLECULE_API_DECORATOR
-#undef __DEFINE_MOLECULE_API_DECORATOR_DAG
-#endif /* __DEFINE_MOLECULE_API_DECORATOR_DAG */
+#undef __DEFINE_MOLECULE_API_DECORATOR_SPAWN_DAG
+#endif /* __DEFINE_MOLECULE_API_DECORATOR_SPAWN_DAG */
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* DAG_H */
+#endif /* SPAWN_DAG_H */

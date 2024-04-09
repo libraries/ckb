@@ -105,25 +105,25 @@ int main(int argc, char *argv[]) {
         if (spawn_found == 0) {
             return ERROR_ARGV;
         }
-        mol_seg_t passed_fds_seg = MolReader_Spawn_get_pipes(&spawn_seg);
+        mol_seg_t passed_fds_seg = MolReader_Spawn_get_fds(&spawn_seg);
 
         decoded_length = 0;
         ret = ee_decode_char_string_in_place(argv[1], &decoded_length);
         if (ret != 0) {
             return ret;
         }
-        if (decoded_length != MolReader_PipeIndices_length(&passed_fds_seg) * 8) {
+        if (decoded_length != MolReader_FdIndices_length(&passed_fds_seg) * 8) {
             return ERROR_ARGV;
         }
-        for (mol_num_t i = 0; i < MolReader_PipeIndices_length(&passed_fds_seg); i++) {
-            mol_seg_res_t pipe_res = MolReader_PipeIndices_get(&passed_fds_seg, i);
-            if (pipe_res.errno != MOL_OK) {
+        for (mol_num_t i = 0; i < MolReader_FdIndices_length(&passed_fds_seg); i++) {
+            mol_seg_res_t fd_res = MolReader_FdIndices_get(&passed_fds_seg, i);
+            if (fd_res.errno != MOL_OK) {
                 return ERROR_ENCODING;
             }
-            uint64_t pipe_index = *((uint64_t *)pipe_res.seg.ptr);
-            uint64_t pipe_id = *((uint64_t *)&argv[1][i * 8]);
+            uint64_t fd_index = *((uint64_t *)fd_res.seg.ptr);
+            uint64_t fd_id = *((uint64_t *)&argv[1][i * 8]);
 
-            ret = fds_add(&current_fds, pipe_index, pipe_id);
+            ret = fds_add(&current_fds, fd_index, fd_id);
             if (ret != 0) {
                 return ret;
             }
@@ -131,18 +131,18 @@ int main(int argc, char *argv[]) {
     }
 
     // Create new fds that should be created from current VM
-    mol_seg_t pipes_seg = MolReader_Data_get_pipes(&data_seg);
-    for (mol_num_t i = 0; i < MolReader_Pipes_length(&pipes_seg); i++) {
-        mol_seg_res_t pipe_pair_res = MolReader_Pipes_get(&pipes_seg, i);
-        if (pipe_pair_res.errno != MOL_OK) {
+    mol_seg_t fds_seg = MolReader_Data_get_fds(&data_seg);
+    for (mol_num_t i = 0; i < MolReader_Fds_length(&fds_seg); i++) {
+        mol_seg_res_t fd_pair_res = MolReader_Fds_get(&fds_seg, i);
+        if (fd_pair_res.errno != MOL_OK) {
             return ERROR_ENCODING;
         }
-        mol_seg_t pipe_pair_seg = pipe_pair_res.seg;
+        mol_seg_t fd_pair_seg = fd_pair_res.seg;
 
-        uint64_t pair_vm_index = *((uint64_t *)MolReader_Pipe_get_vm(&pipe_pair_seg).ptr);
+        uint64_t pair_vm_index = *((uint64_t *)MolReader_Fd_get_vm(&fd_pair_seg).ptr);
         if (pair_vm_index == vm_index) {
-            uint64_t read_index = *((uint64_t *)MolReader_Pipe_get_read_pipe(&pipe_pair_seg).ptr);
-            uint64_t write_index = *((uint64_t *)MolReader_Pipe_get_write_pipe(&pipe_pair_seg).ptr);
+            uint64_t read_index = *((uint64_t *)MolReader_Fd_get_read_fd(&fd_pair_seg).ptr);
+            uint64_t write_index = *((uint64_t *)MolReader_Fd_get_write_fd(&fd_pair_seg).ptr);
 
             uint64_t fildes[2];
             ret = ckb_pipe(fildes);
@@ -179,12 +179,12 @@ int main(int argc, char *argv[]) {
 
             uint64_t child_index = *((uint64_t *)MolReader_Spawn_get_child(&spawn_seg).ptr);
 
-            fds_t passed_pipes;
-            fds_init(&passed_pipes);
+            fds_t passed_fds;
+            fds_init(&passed_fds);
 
-            mol_seg_t pipe_indices = MolReader_Spawn_get_pipes(&spawn_seg);
-            for (mol_num_t i = 0; i < MolReader_PipeIndices_length(&pipe_indices); i++) {
-                mol_seg_res_t index_res = MolReader_PipeIndices_get(&pipe_indices, i);
+            mol_seg_t fd_indices = MolReader_Spawn_get_fds(&spawn_seg);
+            for (mol_num_t i = 0; i < MolReader_FdIndices_length(&fd_indices); i++) {
+                mol_seg_res_t index_res = MolReader_FdIndices_get(&fd_indices, i);
                 if (index_res.errno != MOL_OK) {
                     return ERROR_ENCODING;
                 }
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
                     return ret;
                 }
 
-                ret = fds_add(&passed_pipes, index, id);
+                ret = fds_add(&passed_fds, index, id);
                 if (ret != 0) {
                     return ret;
                 }
@@ -212,10 +212,10 @@ int main(int argc, char *argv[]) {
             }
             encoded_child_index[dst_len] = '\0';
 
-            src_len = passed_pipes.used * 8;
+            src_len = passed_fds.used * 8;
             dst_len = ee_maximum_encoding_length(src_len);
             uint8_t encoded_ids[dst_len + 1];
-            ret = ee_encode(encoded_ids, &dst_len, (const uint8_t *)passed_pipes.ids, &src_len);
+            ret = ee_encode(encoded_ids, &dst_len, (const uint8_t *)passed_fds.ids, &src_len);
             if (ret != 0) {
                 return ret;
             }
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
             sargs.argc = 2;
             sargs.argv = argv;
             sargs.process_id = &spawned_vms[spawned_count++];
-            sargs.inherited_fds = (const uint64_t *)passed_pipes.ids;
+            sargs.inherited_fds = (const uint64_t *)passed_fds.ids;
 
             ret = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &sargs);
             if (ret != 0) {
@@ -249,11 +249,11 @@ int main(int argc, char *argv[]) {
 
         if (from == vm_index) {
             // Write data
-            uint64_t from_pipe = *((uint64_t *)MolReader_Write_get_from_pipe(&write_seg).ptr);
+            uint64_t from_fd = *((uint64_t *)MolReader_Write_get_from_fd(&write_seg).ptr);
             mol_seg_t data_seg = MolReader_Write_get_data(&write_seg);
 
-            uint64_t pipe_id = 0;
-            ret = fds_find(&current_fds, from_pipe, &pipe_id);
+            uint64_t fd_id = 0;
+            ret = fds_find(&current_fds, from_fd, &fd_id);
             if (ret != 0) {
                 return ret;
             }
@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
             uint32_t written = 0;
             while (written < data_seg.size) {
                 size_t length = data_seg.size - written;
-                ret = ckb_write(pipe_id, &data_seg.ptr[written], &length);
+                ret = ckb_write(fd_id, &data_seg.ptr[written], &length);
                 if (ret != 0) {
                     return ret;
                 }
@@ -272,11 +272,11 @@ int main(int argc, char *argv[]) {
             }
         } else if (to == vm_index) {
             // Read data
-            uint64_t to_pipe = *((uint64_t *)MolReader_Write_get_to_pipe(&write_seg).ptr);
+            uint64_t to_fd = *((uint64_t *)MolReader_Write_get_to_fd(&write_seg).ptr);
             mol_seg_t data_seg = MolReader_Write_get_data(&write_seg);
 
-            uint64_t pipe_id = 0;
-            ret = fds_find(&current_fds, to_pipe, &pipe_id);
+            uint64_t fd_id = 0;
+            ret = fds_find(&current_fds, to_fd, &fd_id);
             if (ret != 0) {
                 return ret;
             }
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
                 size_t length = data_seg.size - read;
                 uint8_t data[length];
                 memset(data, 0, length);
-                ret = ckb_read(pipe_id, data, &length);
+                ret = ckb_read(fd_id, data, &length);
                 if (ret != 0) {
                     return ret;
                 }
