@@ -104,6 +104,12 @@ fn check_spawn_max_vms_count() {
 }
 
 #[test]
+fn check_spawn_max_pipe_limits() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[11]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
+
+#[test]
 fn check_vm_version() {
     let script_version = SCRIPT_VERSION;
 
