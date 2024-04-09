@@ -8,8 +8,8 @@ use crate::verify::TransactionScriptsSyscallsGenerator;
 use crate::ScriptVersion;
 
 use crate::types::{
-    set_vm_max_cycles, CoreMachineType, DataPieceId, FullSuspendedState, Machine, Message, FdId,
-    FdIoArgs, RunMode, TxData, VmId, VmState, FIRST_FD_SLOT, FIRST_VM_ID,
+    set_vm_max_cycles, CoreMachineType, DataPieceId, FdId, FdIoArgs, FullSuspendedState, Machine,
+    Message, RunMode, TxData, VmId, VmState, FIRST_FD_SLOT, FIRST_VM_ID,
 };
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::Cycle;
