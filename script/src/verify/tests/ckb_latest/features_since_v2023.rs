@@ -104,7 +104,7 @@ fn check_spawn_max_vms_count() {
 }
 
 #[test]
-fn check_spawn_max_pipe_limits() {
+fn check_spawn_max_fd_limits() {
     let result = simple_spawn_test("testdata/spawn_cases", &[11]);
     assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
 }
@@ -648,11 +648,11 @@ fn check_spawn_current_cycles() {
 }
 
 #[test]
-fn check_spawn_pipe_limits() {
+fn check_spawn_fd_limits() {
     let script_version = SCRIPT_VERSION;
 
     let (spawn_caller_cell, spawn_caller_data_hash) =
-        load_cell_from_path("testdata/spawn_pipe_limits");
+        load_cell_from_path("testdata/spawn_fd_limits");
 
     let spawn_caller_script = Script::new_builder()
         .hash_type(script_version.data_hash_type().into())
@@ -951,18 +951,18 @@ pub fn generate_data_graph(
         }
     }
 
-    // Edge index -> pipe indices. Daggy::edge_endpoints helps us finding
+    // Edge index -> fd indices. Daggy::edge_endpoints helps us finding
     // nodes (vms) from edges (spawns)
     let mut spawn_ops: HashMap<usize, Vec<usize>> = HashMap::default();
-    // Node index -> created pipes
-    let mut pipes_ops: BTreeMap<usize, Vec<(usize, usize)>> = BTreeMap::default();
+    // Node index -> created fds
+    let mut fds_ops: BTreeMap<usize, Vec<(usize, usize)>> = BTreeMap::default();
 
     let mut spawn_edges = Vec::new();
     // Traversing spawn_dag for spawn operations
     let mut processing = VecDeque::from([spawn_root]);
     while !processing.is_empty() {
         let node = processing.pop_front().unwrap();
-        pipes_ops.insert(node.index(), Vec::new());
+        fds_ops.insert(node.index(), Vec::new());
         let children: Vec<_> = spawn_dag.children(node).iter(&spawn_dag).collect();
         for (e, n) in children.into_iter().rev() {
             spawn_ops.insert(e.index(), Vec::new());
@@ -977,8 +977,8 @@ pub fn generate_data_graph(
     for e in write_edges {
         let (writer, reader) = write_dag.edge_endpoints(e).unwrap();
         assert_ne!(writer, reader);
-        let writer_pipe_index = e.index() * 2 + 1;
-        let reader_pipe_index = e.index() * 2;
+        let writer_fd_index = e.index() * 2 + 1;
+        let reader_fd_index = e.index() * 2;
 
         // Generate finalized write op
         {
@@ -989,9 +989,9 @@ pub fn generate_data_graph(
             writes_builder = writes_builder.push(
                 dag::WriteBuilder::default()
                     .from(build_vm_index(writer.index() as u64))
-                    .from_pipe(build_pipe_index(writer_pipe_index as u64))
+                    .from_pipe(build_fd_index(writer_fd_index as u64))
                     .to(build_vm_index(reader.index() as u64))
-                    .to_pipe(build_pipe_index(reader_pipe_index as u64))
+                    .to_pipe(build_fd_index(reader_fd_index as u64))
                     .data(
                         dag::BytesBuilder::default()
                             .extend(data.iter().map(|b| Byte::new(*b)))
@@ -1002,8 +1002,8 @@ pub fn generate_data_graph(
         }
 
         // Finding the lowest common ancestor of writer & reader nodes
-        // in spawn_dag, which will creates the pair of pipes. Note that
-        // all traversed spawn edges will have to pass the pipes down.
+        // in spawn_dag, which will creates the pair of fds. Note that
+        // all traversed spawn edges will have to pass the fds down.
         //
         // TODO: we use a simple yet slow LCA solution, a faster algorithm
         // can be used to replace the code here if needed.
@@ -1026,7 +1026,7 @@ pub fn generate_data_graph(
                         || ((parents_a.len() == 1) && parents_b.is_empty())
                 );
 
-                // Update spawn ops to pass down pipes via edges, also update
+                // Update spawn ops to pass down fds via edges, also update
                 // each node's path node list
                 if parents_a.len() == 1 {
                     let (_, parent_a) = parents_a[0];
@@ -1058,7 +1058,7 @@ pub fn generate_data_graph(
         };
 
         // Update the path from each node to the LCA so we can pass created
-        // pipes from LCA to each node
+        // fds from LCA to each node
         {
             let mut a = writer;
             while a != ancestor {
@@ -1068,7 +1068,7 @@ pub fn generate_data_graph(
                 spawn_ops
                     .get_mut(&edge_a.index())
                     .unwrap()
-                    .push(writer_pipe_index);
+                    .push(writer_fd_index);
                 a = parent_a;
             }
 
@@ -1080,26 +1080,26 @@ pub fn generate_data_graph(
                 spawn_ops
                     .get_mut(&edge_b.index())
                     .unwrap()
-                    .push(reader_pipe_index);
+                    .push(reader_fd_index);
                 b = parent_b;
             }
         }
 
-        // Create the pipes at the ancestor node
-        pipes_ops
+        // Create the fds at the ancestor node
+        fds_ops
             .get_mut(&ancestor.index())
             .unwrap()
-            .push((reader_pipe_index, writer_pipe_index));
+            .push((reader_fd_index, writer_fd_index));
     }
 
     let mut spawns_builder = dag::SpawnsBuilder::default();
     for e in spawn_edges {
         let (parent, child) = spawn_dag.edge_endpoints(e).unwrap();
 
-        let pipes = {
+        let fds = {
             let mut builder = dag::PipeIndicesBuilder::default();
             for p in &spawn_ops[&e.index()] {
-                builder = builder.push(build_pipe_index(*p as u64));
+                builder = builder.push(build_fd_index(*p as u64));
             }
             builder.build()
         };
@@ -1108,19 +1108,19 @@ pub fn generate_data_graph(
             dag::SpawnBuilder::default()
                 .from(build_vm_index(parent.index() as u64))
                 .child(build_vm_index(child.index() as u64))
-                .pipes(pipes)
+                .pipes(fds)
                 .build(),
         );
     }
 
-    let mut pipes_builder = dag::PipesBuilder::default();
-    for (vm_index, pairs) in pipes_ops {
-        for (reader_pipe_index, writer_pipe_index) in pairs {
-            pipes_builder = pipes_builder.push(
+    let mut fds_builder = dag::PipesBuilder::default();
+    for (vm_index, pairs) in fds_ops {
+        for (reader_fd_index, writer_fd_index) in pairs {
+            fds_builder = fds_builder.push(
                 dag::PipeBuilder::default()
                     .vm(build_vm_index(vm_index as u64))
-                    .read_pipe(build_pipe_index(reader_pipe_index as u64))
-                    .write_pipe(build_pipe_index(writer_pipe_index as u64))
+                    .read_pipe(build_fd_index(reader_fd_index as u64))
+                    .write_pipe(build_fd_index(writer_fd_index as u64))
                     .build(),
             );
         }
@@ -1128,7 +1128,7 @@ pub fn generate_data_graph(
 
     Ok(dag::DataBuilder::default()
         .spawns(spawns_builder.build())
-        .pipes(pipes_builder.build())
+        .pipes(fds_builder.build())
         .writes(writes_builder.build())
         .build())
 }
@@ -1141,7 +1141,7 @@ fn build_vm_index(val: u64) -> dag::VmIndex {
     dag::VmIndexBuilder::default().set(data).build()
 }
 
-fn build_pipe_index(val: u64) -> dag::PipeIndex {
+fn build_fd_index(val: u64) -> dag::PipeIndex {
     let mut data = [Byte::new(0); 8];
     for (i, v) in val.to_le_bytes().into_iter().enumerate() {
         data[i] = Byte::new(v);
