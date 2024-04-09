@@ -24,6 +24,7 @@ int extract_command(Data* data, Command* cmd) {
     if (id > 250) {
         cmd->id = SyscallClose;
         cmd->fd_index = (size_t)(id % 2);
+        data->offset += 1;
     } else if (id > 128) {
         if ((data->offset + 7) > data->total_size) {
             return -1;
@@ -31,6 +32,7 @@ int extract_command(Data* data, Command* cmd) {
         cmd->id = SyscallRead;
         memcpy(&cmd->buf_ptr, &data->ptr[data->offset + 1], 3);
         memcpy(&cmd->len_ptr, &data->ptr[data->offset + 4], 3);
+        data->offset += 7;
     } else {
         if ((data->offset + 7) > data->total_size) {
             return -1;
@@ -38,6 +40,7 @@ int extract_command(Data* data, Command* cmd) {
         cmd->id = SyscallWrite;
         memcpy(&cmd->buf_ptr, &data->ptr[data->offset + 1], 3);
         memcpy(&cmd->len_ptr, &data->ptr[data->offset + 4], 3);
+        data->offset += 7;
     }
     return 0;
 }
