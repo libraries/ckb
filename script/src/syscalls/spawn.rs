@@ -1,7 +1,7 @@
 use crate::cost_model::transferred_byte_cycles;
 use crate::syscalls::utils::load_c_string;
 use crate::syscalls::{INDEX_OUT_OF_BOUND, SLICE_OUT_OF_BOUND, SPAWN, SPAWN_EXTRA_CYCLES_BASE};
-use crate::types::{DataPieceId, Message, PipeId, SpawnArgs, TxData, VmId};
+use crate::types::{DataPieceId, FdId, Message, SpawnArgs, TxData, VmId};
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_vm::{
     machine::SupportMachine,
@@ -93,24 +93,24 @@ where
             .memory_mut()
             .load64(&Mac::REG::from_u64(process_id_addr_addr))?
             .to_u64();
-        let pipes_addr_addr = spgs_addr.wrapping_add(24);
-        let mut pipes_addr = machine
+        let fds_addr_addr = spgs_addr.wrapping_add(24);
+        let mut fds_addr = machine
             .memory_mut()
-            .load64(&Mac::REG::from_u64(pipes_addr_addr))?
+            .load64(&Mac::REG::from_u64(fds_addr_addr))?
             .to_u64();
 
-        let mut pipes = vec![];
-        if pipes_addr != 0 {
+        let mut fds = vec![];
+        if fds_addr != 0 {
             loop {
-                let pipe = machine
+                let fd = machine
                     .memory_mut()
-                    .load64(&Mac::REG::from_u64(pipes_addr))?
+                    .load64(&Mac::REG::from_u64(fds_addr))?
                     .to_u64();
-                if pipe == 0 {
+                if fd == 0 {
                     break;
                 }
-                pipes.push(PipeId(pipe));
-                pipes_addr += 8;
+                fds.push(FdId(fd));
+                fds_addr += 8;
             }
         }
 
@@ -152,7 +152,7 @@ where
                     offset,
                     length,
                     argv,
-                    pipes,
+                    fds,
                     process_id_addr,
                 },
             ));

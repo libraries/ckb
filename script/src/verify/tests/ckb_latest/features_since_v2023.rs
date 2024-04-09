@@ -1,5 +1,5 @@
 use super::SCRIPT_VERSION;
-use crate::scheduler::{MAX_PIPE, MAX_VMS_COUNT};
+use crate::scheduler::{MAX_FD, MAX_VMS_COUNT};
 use crate::syscalls::SOURCE_GROUP_FLAG;
 use crate::verify::{tests::utils::*, *};
 use ckb_types::{
@@ -989,9 +989,9 @@ pub fn generate_data_graph(
             writes_builder = writes_builder.push(
                 dag::WriteBuilder::default()
                     .from(build_vm_index(writer.index() as u64))
-                    .from_pipe(build_fd_index(writer_fd_index as u64))
+                    .from_fd(build_fd_index(writer_fd_index as u64))
                     .to(build_vm_index(reader.index() as u64))
-                    .to_pipe(build_fd_index(reader_fd_index as u64))
+                    .to_fd(build_fd_index(reader_fd_index as u64))
                     .data(
                         dag::BytesBuilder::default()
                             .extend(data.iter().map(|b| Byte::new(*b)))
@@ -1097,7 +1097,7 @@ pub fn generate_data_graph(
         let (parent, child) = spawn_dag.edge_endpoints(e).unwrap();
 
         let fds = {
-            let mut builder = dag::PipeIndicesBuilder::default();
+            let mut builder = dag::FdIndicesBuilder::default();
             for p in &spawn_ops[&e.index()] {
                 builder = builder.push(build_fd_index(*p as u64));
             }
@@ -1108,19 +1108,19 @@ pub fn generate_data_graph(
             dag::SpawnBuilder::default()
                 .from(build_vm_index(parent.index() as u64))
                 .child(build_vm_index(child.index() as u64))
-                .pipes(fds)
+                .fds(fds)
                 .build(),
         );
     }
 
-    let mut fds_builder = dag::PipesBuilder::default();
+    let mut fds_builder = dag::FdsBuilder::default();
     for (vm_index, pairs) in fds_ops {
         for (reader_fd_index, writer_fd_index) in pairs {
             fds_builder = fds_builder.push(
-                dag::PipeBuilder::default()
+                dag::FdBuilder::default()
                     .vm(build_vm_index(vm_index as u64))
-                    .read_pipe(build_fd_index(reader_fd_index as u64))
-                    .write_pipe(build_fd_index(writer_fd_index as u64))
+                    .read_fd(build_fd_index(reader_fd_index as u64))
+                    .write_fd(build_fd_index(writer_fd_index as u64))
                     .build(),
             );
         }
@@ -1128,7 +1128,7 @@ pub fn generate_data_graph(
 
     Ok(dag::DataBuilder::default()
         .spawns(spawns_builder.build())
-        .pipes(fds_builder.build())
+        .fds(fds_builder.build())
         .writes(writes_builder.build())
         .build())
 }
@@ -1141,12 +1141,12 @@ fn build_vm_index(val: u64) -> dag::VmIndex {
     dag::VmIndexBuilder::default().set(data).build()
 }
 
-fn build_fd_index(val: u64) -> dag::PipeIndex {
+fn build_fd_index(val: u64) -> dag::FdIndex {
     let mut data = [Byte::new(0); 8];
     for (i, v) in val.to_le_bytes().into_iter().enumerate() {
         data[i] = Byte::new(v);
     }
-    dag::PipeIndexBuilder::default().set(data).build()
+    dag::FdIndexBuilder::default().set(data).build()
 }
 
 proptest! {
@@ -1155,7 +1155,7 @@ proptest! {
     fn test_random_dag(
         seed: u64,
         spawns in 5u32..MAX_VMS_COUNT as u32,
-        writes in 3u32..MAX_PIPE as u32 / 2,
+        writes in 3u32..MAX_FD as u32 / 2,
     ) {
         let script_version = SCRIPT_VERSION;
         let program: Bytes = std::fs::read("./testdata/spawn_dag").unwrap().into();

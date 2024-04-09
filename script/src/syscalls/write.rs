@@ -1,6 +1,6 @@
 use crate::cost_model::transferred_byte_cycles;
-use crate::syscalls::{INVALID_PIPE, WRITE};
-use crate::types::{Message, PipeId, PipeIoArgs, VmId};
+use crate::syscalls::{INVALID_FD, WRITE};
+use crate::types::{FdId, FdIoArgs, Message, VmId};
 use ckb_vm::{
     registers::{A0, A1, A2, A7},
     Error as VMError, Memory, Register, SupportMachine, Syscalls,
@@ -28,7 +28,7 @@ impl<Mac: SupportMachine> Syscalls<Mac> for Write {
         if machine.registers()[A7].to_u64() != WRITE {
             return Ok(false);
         }
-        let pipe = PipeId(machine.registers()[A0].to_u64());
+        let fd = FdId(machine.registers()[A0].to_u64());
         let buffer_addr = machine.registers()[A1].to_u64();
         let length_addr = machine.registers()[A2].to_u64();
         let length = machine
@@ -39,18 +39,18 @@ impl<Mac: SupportMachine> Syscalls<Mac> for Write {
         // We can only do basic checks here, when the message is actually processed,
         // more complete checks will be performed.
         // We will also leave to the actual write operation to test memory permissions.
-        if !pipe.is_write() {
-            machine.set_register(A0, Mac::REG::from_u8(INVALID_PIPE));
+        if !fd.is_write() {
+            machine.set_register(A0, Mac::REG::from_u8(INVALID_FD));
             return Ok(true);
         }
         machine.add_cycles_no_checking(transferred_byte_cycles(length))?;
         self.message_box
             .lock()
             .map_err(|e| VMError::Unexpected(e.to_string()))?
-            .push(Message::PipeWrite(
+            .push(Message::FdWrite(
                 self.id,
-                PipeIoArgs {
-                    pipe,
+                FdIoArgs {
+                    fd,
                     length,
                     buffer_addr,
                     length_addr,

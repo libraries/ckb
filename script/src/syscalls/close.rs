@@ -1,5 +1,5 @@
 use crate::syscalls::CLOSE;
-use crate::types::{Message, PipeId, VmId};
+use crate::types::{FdId, Message, VmId};
 use ckb_vm::{
     registers::{A0, A7},
     Error as VMError, Register, SupportMachine, Syscalls,
@@ -27,11 +27,11 @@ impl<Mac: SupportMachine> Syscalls<Mac> for Close {
         if machine.registers()[A7].to_u64() != CLOSE {
             return Ok(false);
         }
-        let pipe = PipeId(machine.registers()[A0].to_u64());
+        let fd = FdId(machine.registers()[A0].to_u64());
         self.message_box
             .lock()
             .map_err(|e| VMError::Unexpected(e.to_string()))?
-            .push(Message::Close(self.id, pipe));
+            .push(Message::Close(self.id, fd));
         Err(VMError::External("YIELD".to_string()))
     }
 }

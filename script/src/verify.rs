@@ -6,8 +6,8 @@ use crate::types::{DataPieceId, FullSuspendedState, Message, RunMode, TxData, Vm
 use crate::{
     error::{ScriptError, TransactionScriptError},
     syscalls::{
-        Close, CurrentCycles, Debugger, Exec, LoadBlockExtension, LoadCell, LoadCellData,
-        LoadHeader, LoadInput, LoadScript, LoadScriptHash, LoadTx, LoadWitness, Pipe, Read, Spawn,
+        Close, CurrentCycles, Debugger, Exec, Fd, LoadBlockExtension, LoadCell, LoadCellData,
+        LoadHeader, LoadInput, LoadScript, LoadScriptHash, LoadTx, LoadWitness, Read, Spawn,
         VMVersion, Wait, Write,
     },
     type_id::TypeIdSystemScript,
@@ -257,9 +257,9 @@ where
         ProcessID::new(self.vm_id)
     }
 
-    /// Build syscall: pipe
-    pub fn build_pipe(&self) -> Pipe {
-        Pipe::new(self.vm_id, Arc::clone(&self.message_box))
+    /// Build syscall: fd
+    pub fn build_fd(&self) -> Fd {
+        Fd::new(self.vm_id, Arc::clone(&self.message_box))
     }
 
     /// Build syscall: write
@@ -326,7 +326,7 @@ where
                 Box::new(self.build_load_block_extension(Arc::clone(&script_group_input_indices))),
                 Box::new(self.build_spawn()),
                 Box::new(self.build_process_id()),
-                Box::new(self.build_pipe()),
+                Box::new(self.build_fd()),
                 Box::new(self.build_wait()),
                 Box::new(self.build_write()),
                 Box::new(self.build_read()),

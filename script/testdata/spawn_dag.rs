@@ -263,8 +263,8 @@ impl molecule::prelude::Builder for VmIndexBuilder {
     }
 }
 #[derive(Clone)]
-pub struct PipeIndex(molecule::bytes::Bytes);
-impl ::core::fmt::LowerHex for PipeIndex {
+pub struct FdIndex(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for FdIndex {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -273,25 +273,25 @@ impl ::core::fmt::LowerHex for PipeIndex {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl ::core::fmt::Debug for PipeIndex {
+impl ::core::fmt::Debug for FdIndex {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl ::core::fmt::Display for PipeIndex {
+impl ::core::fmt::Display for FdIndex {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         let raw_data = hex_string(&self.raw_data());
         write!(f, "{}(0x{})", Self::NAME, raw_data)
     }
 }
-impl ::core::default::Default for PipeIndex {
+impl ::core::default::Default for FdIndex {
     fn default() -> Self {
         let v = molecule::bytes::Bytes::from_static(&Self::DEFAULT_VALUE);
-        PipeIndex::new_unchecked(v)
+        FdIndex::new_unchecked(v)
     }
 }
-impl PipeIndex {
+impl FdIndex {
     const DEFAULT_VALUE: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
     pub const TOTAL_SIZE: usize = 8;
     pub const ITEM_SIZE: usize = 1;
@@ -323,15 +323,15 @@ impl PipeIndex {
     pub fn raw_data(&self) -> molecule::bytes::Bytes {
         self.as_bytes()
     }
-    pub fn as_reader<'r>(&'r self) -> PipeIndexReader<'r> {
-        PipeIndexReader::new_unchecked(self.as_slice())
+    pub fn as_reader<'r>(&'r self) -> FdIndexReader<'r> {
+        FdIndexReader::new_unchecked(self.as_slice())
     }
 }
-impl molecule::prelude::Entity for PipeIndex {
-    type Builder = PipeIndexBuilder;
-    const NAME: &'static str = "PipeIndex";
+impl molecule::prelude::Entity for FdIndex {
+    type Builder = FdIndexBuilder;
+    const NAME: &'static str = "FdIndex";
     fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
-        PipeIndex(data)
+        FdIndex(data)
     }
     fn as_bytes(&self) -> molecule::bytes::Bytes {
         self.0.clone()
@@ -340,10 +340,10 @@ impl molecule::prelude::Entity for PipeIndex {
         &self.0[..]
     }
     fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeIndexReader::from_slice(slice).map(|reader| reader.to_entity())
+        FdIndexReader::from_slice(slice).map(|reader| reader.to_entity())
     }
     fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeIndexReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+        FdIndexReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
     }
     fn new_builder() -> Self::Builder {
         ::core::default::Default::default()
@@ -362,8 +362,8 @@ impl molecule::prelude::Entity for PipeIndex {
     }
 }
 #[derive(Clone, Copy)]
-pub struct PipeIndexReader<'r>(&'r [u8]);
-impl<'r> ::core::fmt::LowerHex for PipeIndexReader<'r> {
+pub struct FdIndexReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for FdIndexReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -372,19 +372,19 @@ impl<'r> ::core::fmt::LowerHex for PipeIndexReader<'r> {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl<'r> ::core::fmt::Debug for PipeIndexReader<'r> {
+impl<'r> ::core::fmt::Debug for FdIndexReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl<'r> ::core::fmt::Display for PipeIndexReader<'r> {
+impl<'r> ::core::fmt::Display for FdIndexReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         let raw_data = hex_string(&self.raw_data());
         write!(f, "{}(0x{})", Self::NAME, raw_data)
     }
 }
-impl<'r> PipeIndexReader<'r> {
+impl<'r> FdIndexReader<'r> {
     pub const TOTAL_SIZE: usize = 8;
     pub const ITEM_SIZE: usize = 1;
     pub const ITEM_COUNT: usize = 8;
@@ -416,14 +416,14 @@ impl<'r> PipeIndexReader<'r> {
         self.as_slice()
     }
 }
-impl<'r> molecule::prelude::Reader<'r> for PipeIndexReader<'r> {
-    type Entity = PipeIndex;
-    const NAME: &'static str = "PipeIndexReader";
+impl<'r> molecule::prelude::Reader<'r> for FdIndexReader<'r> {
+    type Entity = FdIndex;
+    const NAME: &'static str = "FdIndexReader";
     fn to_entity(&self) -> Self::Entity {
         Self::Entity::new_unchecked(self.as_slice().to_owned().into())
     }
     fn new_unchecked(slice: &'r [u8]) -> Self {
-        PipeIndexReader(slice)
+        FdIndexReader(slice)
     }
     fn as_slice(&self) -> &'r [u8] {
         self.0
@@ -437,15 +437,15 @@ impl<'r> molecule::prelude::Reader<'r> for PipeIndexReader<'r> {
         Ok(())
     }
 }
-pub struct PipeIndexBuilder(pub(crate) [Byte; 8]);
-impl ::core::fmt::Debug for PipeIndexBuilder {
+pub struct FdIndexBuilder(pub(crate) [Byte; 8]);
+impl ::core::fmt::Debug for FdIndexBuilder {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:?})", Self::NAME, &self.0[..])
     }
 }
-impl ::core::default::Default for PipeIndexBuilder {
+impl ::core::default::Default for FdIndexBuilder {
     fn default() -> Self {
-        PipeIndexBuilder([
+        FdIndexBuilder([
             Byte::default(),
             Byte::default(),
             Byte::default(),
@@ -457,7 +457,7 @@ impl ::core::default::Default for PipeIndexBuilder {
         ])
     }
 }
-impl PipeIndexBuilder {
+impl FdIndexBuilder {
     pub const TOTAL_SIZE: usize = 8;
     pub const ITEM_SIZE: usize = 1;
     pub const ITEM_COUNT: usize = 8;
@@ -498,9 +498,9 @@ impl PipeIndexBuilder {
         self
     }
 }
-impl molecule::prelude::Builder for PipeIndexBuilder {
-    type Entity = PipeIndex;
-    const NAME: &'static str = "PipeIndexBuilder";
+impl molecule::prelude::Builder for FdIndexBuilder {
+    type Entity = FdIndex;
+    const NAME: &'static str = "FdIndexBuilder";
     fn expected_length(&self) -> usize {
         Self::TOTAL_SIZE
     }
@@ -519,12 +519,12 @@ impl molecule::prelude::Builder for PipeIndexBuilder {
         let mut inner = Vec::with_capacity(self.expected_length());
         self.write(&mut inner)
             .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
-        PipeIndex::new_unchecked(inner.into())
+        FdIndex::new_unchecked(inner.into())
     }
 }
 #[derive(Clone)]
-pub struct PipeIndices(molecule::bytes::Bytes);
-impl ::core::fmt::LowerHex for PipeIndices {
+pub struct FdIndices(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for FdIndices {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -533,12 +533,12 @@ impl ::core::fmt::LowerHex for PipeIndices {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl ::core::fmt::Debug for PipeIndices {
+impl ::core::fmt::Debug for FdIndices {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl ::core::fmt::Display for PipeIndices {
+impl ::core::fmt::Display for FdIndices {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} [", Self::NAME)?;
         for i in 0..self.len() {
@@ -551,13 +551,13 @@ impl ::core::fmt::Display for PipeIndices {
         write!(f, "]")
     }
 }
-impl ::core::default::Default for PipeIndices {
+impl ::core::default::Default for FdIndices {
     fn default() -> Self {
         let v = molecule::bytes::Bytes::from_static(&Self::DEFAULT_VALUE);
-        PipeIndices::new_unchecked(v)
+        FdIndices::new_unchecked(v)
     }
 }
-impl PipeIndices {
+impl FdIndices {
     const DEFAULT_VALUE: [u8; 4] = [0, 0, 0, 0];
     pub const ITEM_SIZE: usize = 8;
     pub fn total_size(&self) -> usize {
@@ -572,27 +572,27 @@ impl PipeIndices {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    pub fn get(&self, idx: usize) -> Option<PipeIndex> {
+    pub fn get(&self, idx: usize) -> Option<FdIndex> {
         if idx >= self.len() {
             None
         } else {
             Some(self.get_unchecked(idx))
         }
     }
-    pub fn get_unchecked(&self, idx: usize) -> PipeIndex {
+    pub fn get_unchecked(&self, idx: usize) -> FdIndex {
         let start = molecule::NUMBER_SIZE + Self::ITEM_SIZE * idx;
         let end = start + Self::ITEM_SIZE;
-        PipeIndex::new_unchecked(self.0.slice(start..end))
+        FdIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn as_reader<'r>(&'r self) -> PipeIndicesReader<'r> {
-        PipeIndicesReader::new_unchecked(self.as_slice())
+    pub fn as_reader<'r>(&'r self) -> FdIndicesReader<'r> {
+        FdIndicesReader::new_unchecked(self.as_slice())
     }
 }
-impl molecule::prelude::Entity for PipeIndices {
-    type Builder = PipeIndicesBuilder;
-    const NAME: &'static str = "PipeIndices";
+impl molecule::prelude::Entity for FdIndices {
+    type Builder = FdIndicesBuilder;
+    const NAME: &'static str = "FdIndices";
     fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
-        PipeIndices(data)
+        FdIndices(data)
     }
     fn as_bytes(&self) -> molecule::bytes::Bytes {
         self.0.clone()
@@ -601,10 +601,10 @@ impl molecule::prelude::Entity for PipeIndices {
         &self.0[..]
     }
     fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeIndicesReader::from_slice(slice).map(|reader| reader.to_entity())
+        FdIndicesReader::from_slice(slice).map(|reader| reader.to_entity())
     }
     fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeIndicesReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+        FdIndicesReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
     }
     fn new_builder() -> Self::Builder {
         ::core::default::Default::default()
@@ -614,8 +614,8 @@ impl molecule::prelude::Entity for PipeIndices {
     }
 }
 #[derive(Clone, Copy)]
-pub struct PipeIndicesReader<'r>(&'r [u8]);
-impl<'r> ::core::fmt::LowerHex for PipeIndicesReader<'r> {
+pub struct FdIndicesReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for FdIndicesReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -624,12 +624,12 @@ impl<'r> ::core::fmt::LowerHex for PipeIndicesReader<'r> {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl<'r> ::core::fmt::Debug for PipeIndicesReader<'r> {
+impl<'r> ::core::fmt::Debug for FdIndicesReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl<'r> ::core::fmt::Display for PipeIndicesReader<'r> {
+impl<'r> ::core::fmt::Display for FdIndicesReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} [", Self::NAME)?;
         for i in 0..self.len() {
@@ -642,7 +642,7 @@ impl<'r> ::core::fmt::Display for PipeIndicesReader<'r> {
         write!(f, "]")
     }
 }
-impl<'r> PipeIndicesReader<'r> {
+impl<'r> FdIndicesReader<'r> {
     pub const ITEM_SIZE: usize = 8;
     pub fn total_size(&self) -> usize {
         molecule::NUMBER_SIZE + Self::ITEM_SIZE * self.item_count()
@@ -656,27 +656,27 @@ impl<'r> PipeIndicesReader<'r> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    pub fn get(&self, idx: usize) -> Option<PipeIndexReader<'r>> {
+    pub fn get(&self, idx: usize) -> Option<FdIndexReader<'r>> {
         if idx >= self.len() {
             None
         } else {
             Some(self.get_unchecked(idx))
         }
     }
-    pub fn get_unchecked(&self, idx: usize) -> PipeIndexReader<'r> {
+    pub fn get_unchecked(&self, idx: usize) -> FdIndexReader<'r> {
         let start = molecule::NUMBER_SIZE + Self::ITEM_SIZE * idx;
         let end = start + Self::ITEM_SIZE;
-        PipeIndexReader::new_unchecked(&self.as_slice()[start..end])
+        FdIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
 }
-impl<'r> molecule::prelude::Reader<'r> for PipeIndicesReader<'r> {
-    type Entity = PipeIndices;
-    const NAME: &'static str = "PipeIndicesReader";
+impl<'r> molecule::prelude::Reader<'r> for FdIndicesReader<'r> {
+    type Entity = FdIndices;
+    const NAME: &'static str = "FdIndicesReader";
     fn to_entity(&self) -> Self::Entity {
         Self::Entity::new_unchecked(self.as_slice().to_owned().into())
     }
     fn new_unchecked(slice: &'r [u8]) -> Self {
-        PipeIndicesReader(slice)
+        FdIndicesReader(slice)
     }
     fn as_slice(&self) -> &'r [u8] {
         self.0
@@ -702,32 +702,32 @@ impl<'r> molecule::prelude::Reader<'r> for PipeIndicesReader<'r> {
     }
 }
 #[derive(Debug, Default)]
-pub struct PipeIndicesBuilder(pub(crate) Vec<PipeIndex>);
-impl PipeIndicesBuilder {
+pub struct FdIndicesBuilder(pub(crate) Vec<FdIndex>);
+impl FdIndicesBuilder {
     pub const ITEM_SIZE: usize = 8;
-    pub fn set(mut self, v: Vec<PipeIndex>) -> Self {
+    pub fn set(mut self, v: Vec<FdIndex>) -> Self {
         self.0 = v;
         self
     }
-    pub fn push(mut self, v: PipeIndex) -> Self {
+    pub fn push(mut self, v: FdIndex) -> Self {
         self.0.push(v);
         self
     }
-    pub fn extend<T: ::core::iter::IntoIterator<Item = PipeIndex>>(mut self, iter: T) -> Self {
+    pub fn extend<T: ::core::iter::IntoIterator<Item = FdIndex>>(mut self, iter: T) -> Self {
         for elem in iter {
             self.0.push(elem);
         }
         self
     }
-    pub fn replace(&mut self, index: usize, v: PipeIndex) -> Option<PipeIndex> {
+    pub fn replace(&mut self, index: usize, v: FdIndex) -> Option<FdIndex> {
         self.0
             .get_mut(index)
             .map(|item| ::core::mem::replace(item, v))
     }
 }
-impl molecule::prelude::Builder for PipeIndicesBuilder {
-    type Entity = PipeIndices;
-    const NAME: &'static str = "PipeIndicesBuilder";
+impl molecule::prelude::Builder for FdIndicesBuilder {
+    type Entity = FdIndices;
+    const NAME: &'static str = "FdIndicesBuilder";
     fn expected_length(&self) -> usize {
         molecule::NUMBER_SIZE + Self::ITEM_SIZE * self.0.len()
     }
@@ -742,12 +742,12 @@ impl molecule::prelude::Builder for PipeIndicesBuilder {
         let mut inner = Vec::with_capacity(self.expected_length());
         self.write(&mut inner)
             .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
-        PipeIndices::new_unchecked(inner.into())
+        FdIndices::new_unchecked(inner.into())
     }
 }
-pub struct PipeIndicesIterator(PipeIndices, usize, usize);
-impl ::core::iter::Iterator for PipeIndicesIterator {
-    type Item = PipeIndex;
+pub struct FdIndicesIterator(FdIndices, usize, usize);
+impl ::core::iter::Iterator for FdIndicesIterator {
+    type Item = FdIndex;
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 >= self.2 {
             None
@@ -758,27 +758,27 @@ impl ::core::iter::Iterator for PipeIndicesIterator {
         }
     }
 }
-impl ::core::iter::ExactSizeIterator for PipeIndicesIterator {
+impl ::core::iter::ExactSizeIterator for FdIndicesIterator {
     fn len(&self) -> usize {
         self.2 - self.1
     }
 }
-impl ::core::iter::IntoIterator for PipeIndices {
-    type Item = PipeIndex;
-    type IntoIter = PipeIndicesIterator;
+impl ::core::iter::IntoIterator for FdIndices {
+    type Item = FdIndex;
+    type IntoIter = FdIndicesIterator;
     fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
-        PipeIndicesIterator(self, 0, len)
+        FdIndicesIterator(self, 0, len)
     }
 }
-impl<'r> PipeIndicesReader<'r> {
-    pub fn iter<'t>(&'t self) -> PipeIndicesReaderIterator<'t, 'r> {
-        PipeIndicesReaderIterator(&self, 0, self.len())
+impl<'r> FdIndicesReader<'r> {
+    pub fn iter<'t>(&'t self) -> FdIndicesReaderIterator<'t, 'r> {
+        FdIndicesReaderIterator(&self, 0, self.len())
     }
 }
-pub struct PipeIndicesReaderIterator<'t, 'r>(&'t PipeIndicesReader<'r>, usize, usize);
-impl<'t: 'r, 'r> ::core::iter::Iterator for PipeIndicesReaderIterator<'t, 'r> {
-    type Item = PipeIndexReader<'t>;
+pub struct FdIndicesReaderIterator<'t, 'r>(&'t FdIndicesReader<'r>, usize, usize);
+impl<'t: 'r, 'r> ::core::iter::Iterator for FdIndicesReaderIterator<'t, 'r> {
+    type Item = FdIndexReader<'t>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 >= self.2 {
             None
@@ -789,7 +789,7 @@ impl<'t: 'r, 'r> ::core::iter::Iterator for PipeIndicesReaderIterator<'t, 'r> {
         }
     }
 }
-impl<'t: 'r, 'r> ::core::iter::ExactSizeIterator for PipeIndicesReaderIterator<'t, 'r> {
+impl<'t: 'r, 'r> ::core::iter::ExactSizeIterator for FdIndicesReaderIterator<'t, 'r> {
     fn len(&self) -> usize {
         self.2 - self.1
     }
@@ -1038,8 +1038,8 @@ impl ::core::iter::IntoIterator for Bytes {
     }
 }
 #[derive(Clone)]
-pub struct Pipe(molecule::bytes::Bytes);
-impl ::core::fmt::LowerHex for Pipe {
+pub struct Fd(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for Fd {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -1048,17 +1048,17 @@ impl ::core::fmt::LowerHex for Pipe {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl ::core::fmt::Debug for Pipe {
+impl ::core::fmt::Debug for Fd {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl ::core::fmt::Display for Pipe {
+impl ::core::fmt::Display for Fd {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "vm", self.vm())?;
-        write!(f, ", {}: {}", "read_pipe", self.read_pipe())?;
-        write!(f, ", {}: {}", "write_pipe", self.write_pipe())?;
+        write!(f, ", {}: {}", "read_fd", self.read_fd())?;
+        write!(f, ", {}: {}", "write_fd", self.write_fd())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
             write!(f, ", .. ({} fields)", extra_count)?;
@@ -1066,13 +1066,13 @@ impl ::core::fmt::Display for Pipe {
         write!(f, " }}")
     }
 }
-impl ::core::default::Default for Pipe {
+impl ::core::default::Default for Fd {
     fn default() -> Self {
         let v = molecule::bytes::Bytes::from_static(&Self::DEFAULT_VALUE);
-        Pipe::new_unchecked(v)
+        Fd::new_unchecked(v)
     }
 }
-impl Pipe {
+impl Fd {
     const DEFAULT_VALUE: [u8; 40] = [
         40, 0, 0, 0, 16, 0, 0, 0, 24, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1100,31 +1100,31 @@ impl Pipe {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         VmIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn read_pipe(&self) -> PipeIndex {
+    pub fn read_fd(&self) -> FdIndex {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        PipeIndex::new_unchecked(self.0.slice(start..end))
+        FdIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn write_pipe(&self) -> PipeIndex {
+    pub fn write_fd(&self) -> FdIndex {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[12..]) as usize;
         if self.has_extra_fields() {
             let end = molecule::unpack_number(&slice[16..]) as usize;
-            PipeIndex::new_unchecked(self.0.slice(start..end))
+            FdIndex::new_unchecked(self.0.slice(start..end))
         } else {
-            PipeIndex::new_unchecked(self.0.slice(start..))
+            FdIndex::new_unchecked(self.0.slice(start..))
         }
     }
-    pub fn as_reader<'r>(&'r self) -> PipeReader<'r> {
-        PipeReader::new_unchecked(self.as_slice())
+    pub fn as_reader<'r>(&'r self) -> FdReader<'r> {
+        FdReader::new_unchecked(self.as_slice())
     }
 }
-impl molecule::prelude::Entity for Pipe {
-    type Builder = PipeBuilder;
-    const NAME: &'static str = "Pipe";
+impl molecule::prelude::Entity for Fd {
+    type Builder = FdBuilder;
+    const NAME: &'static str = "Fd";
     fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
-        Pipe(data)
+        Fd(data)
     }
     fn as_bytes(&self) -> molecule::bytes::Bytes {
         self.0.clone()
@@ -1133,10 +1133,10 @@ impl molecule::prelude::Entity for Pipe {
         &self.0[..]
     }
     fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeReader::from_slice(slice).map(|reader| reader.to_entity())
+        FdReader::from_slice(slice).map(|reader| reader.to_entity())
     }
     fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipeReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+        FdReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
     }
     fn new_builder() -> Self::Builder {
         ::core::default::Default::default()
@@ -1144,13 +1144,13 @@ impl molecule::prelude::Entity for Pipe {
     fn as_builder(self) -> Self::Builder {
         Self::new_builder()
             .vm(self.vm())
-            .read_pipe(self.read_pipe())
-            .write_pipe(self.write_pipe())
+            .read_fd(self.read_fd())
+            .write_fd(self.write_fd())
     }
 }
 #[derive(Clone, Copy)]
-pub struct PipeReader<'r>(&'r [u8]);
-impl<'r> ::core::fmt::LowerHex for PipeReader<'r> {
+pub struct FdReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for FdReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -1159,17 +1159,17 @@ impl<'r> ::core::fmt::LowerHex for PipeReader<'r> {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl<'r> ::core::fmt::Debug for PipeReader<'r> {
+impl<'r> ::core::fmt::Debug for FdReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl<'r> ::core::fmt::Display for PipeReader<'r> {
+impl<'r> ::core::fmt::Display for FdReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "vm", self.vm())?;
-        write!(f, ", {}: {}", "read_pipe", self.read_pipe())?;
-        write!(f, ", {}: {}", "write_pipe", self.write_pipe())?;
+        write!(f, ", {}: {}", "read_fd", self.read_fd())?;
+        write!(f, ", {}: {}", "write_fd", self.write_fd())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
             write!(f, ", .. ({} fields)", extra_count)?;
@@ -1177,7 +1177,7 @@ impl<'r> ::core::fmt::Display for PipeReader<'r> {
         write!(f, " }}")
     }
 }
-impl<'r> PipeReader<'r> {
+impl<'r> FdReader<'r> {
     pub const FIELD_COUNT: usize = 3;
     pub fn total_size(&self) -> usize {
         molecule::unpack_number(self.as_slice()) as usize
@@ -1201,31 +1201,31 @@ impl<'r> PipeReader<'r> {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         VmIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn read_pipe(&self) -> PipeIndexReader<'r> {
+    pub fn read_fd(&self) -> FdIndexReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        PipeIndexReader::new_unchecked(&self.as_slice()[start..end])
+        FdIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn write_pipe(&self) -> PipeIndexReader<'r> {
+    pub fn write_fd(&self) -> FdIndexReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[12..]) as usize;
         if self.has_extra_fields() {
             let end = molecule::unpack_number(&slice[16..]) as usize;
-            PipeIndexReader::new_unchecked(&self.as_slice()[start..end])
+            FdIndexReader::new_unchecked(&self.as_slice()[start..end])
         } else {
-            PipeIndexReader::new_unchecked(&self.as_slice()[start..])
+            FdIndexReader::new_unchecked(&self.as_slice()[start..])
         }
     }
 }
-impl<'r> molecule::prelude::Reader<'r> for PipeReader<'r> {
-    type Entity = Pipe;
-    const NAME: &'static str = "PipeReader";
+impl<'r> molecule::prelude::Reader<'r> for FdReader<'r> {
+    type Entity = Fd;
+    const NAME: &'static str = "FdReader";
     fn to_entity(&self) -> Self::Entity {
         Self::Entity::new_unchecked(self.as_slice().to_owned().into())
     }
     fn new_unchecked(slice: &'r [u8]) -> Self {
-        PipeReader(slice)
+        FdReader(slice)
     }
     fn as_slice(&self) -> &'r [u8] {
         self.0
@@ -1265,40 +1265,40 @@ impl<'r> molecule::prelude::Reader<'r> for PipeReader<'r> {
             return ve!(Self, OffsetsNotMatch);
         }
         VmIndexReader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
-        PipeIndexReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
-        PipeIndexReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
+        FdIndexReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        FdIndexReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
         Ok(())
     }
 }
 #[derive(Debug, Default)]
-pub struct PipeBuilder {
+pub struct FdBuilder {
     pub(crate) vm: VmIndex,
-    pub(crate) read_pipe: PipeIndex,
-    pub(crate) write_pipe: PipeIndex,
+    pub(crate) read_fd: FdIndex,
+    pub(crate) write_fd: FdIndex,
 }
-impl PipeBuilder {
+impl FdBuilder {
     pub const FIELD_COUNT: usize = 3;
     pub fn vm(mut self, v: VmIndex) -> Self {
         self.vm = v;
         self
     }
-    pub fn read_pipe(mut self, v: PipeIndex) -> Self {
-        self.read_pipe = v;
+    pub fn read_fd(mut self, v: FdIndex) -> Self {
+        self.read_fd = v;
         self
     }
-    pub fn write_pipe(mut self, v: PipeIndex) -> Self {
-        self.write_pipe = v;
+    pub fn write_fd(mut self, v: FdIndex) -> Self {
+        self.write_fd = v;
         self
     }
 }
-impl molecule::prelude::Builder for PipeBuilder {
-    type Entity = Pipe;
-    const NAME: &'static str = "PipeBuilder";
+impl molecule::prelude::Builder for FdBuilder {
+    type Entity = Fd;
+    const NAME: &'static str = "FdBuilder";
     fn expected_length(&self) -> usize {
         molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
             + self.vm.as_slice().len()
-            + self.read_pipe.as_slice().len()
-            + self.write_pipe.as_slice().len()
+            + self.read_fd.as_slice().len()
+            + self.write_fd.as_slice().len()
     }
     fn write<W: molecule::io::Write>(&self, writer: &mut W) -> molecule::io::Result<()> {
         let mut total_size = molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1);
@@ -1306,28 +1306,28 @@ impl molecule::prelude::Builder for PipeBuilder {
         offsets.push(total_size);
         total_size += self.vm.as_slice().len();
         offsets.push(total_size);
-        total_size += self.read_pipe.as_slice().len();
+        total_size += self.read_fd.as_slice().len();
         offsets.push(total_size);
-        total_size += self.write_pipe.as_slice().len();
+        total_size += self.write_fd.as_slice().len();
         writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
         for offset in offsets.into_iter() {
             writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
         }
         writer.write_all(self.vm.as_slice())?;
-        writer.write_all(self.read_pipe.as_slice())?;
-        writer.write_all(self.write_pipe.as_slice())?;
+        writer.write_all(self.read_fd.as_slice())?;
+        writer.write_all(self.write_fd.as_slice())?;
         Ok(())
     }
     fn build(&self) -> Self::Entity {
         let mut inner = Vec::with_capacity(self.expected_length());
         self.write(&mut inner)
             .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
-        Pipe::new_unchecked(inner.into())
+        Fd::new_unchecked(inner.into())
     }
 }
 #[derive(Clone)]
-pub struct Pipes(molecule::bytes::Bytes);
-impl ::core::fmt::LowerHex for Pipes {
+pub struct Fds(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for Fds {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -1336,12 +1336,12 @@ impl ::core::fmt::LowerHex for Pipes {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl ::core::fmt::Debug for Pipes {
+impl ::core::fmt::Debug for Fds {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl ::core::fmt::Display for Pipes {
+impl ::core::fmt::Display for Fds {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} [", Self::NAME)?;
         for i in 0..self.len() {
@@ -1354,13 +1354,13 @@ impl ::core::fmt::Display for Pipes {
         write!(f, "]")
     }
 }
-impl ::core::default::Default for Pipes {
+impl ::core::default::Default for Fds {
     fn default() -> Self {
         let v = molecule::bytes::Bytes::from_static(&Self::DEFAULT_VALUE);
-        Pipes::new_unchecked(v)
+        Fds::new_unchecked(v)
     }
 }
-impl Pipes {
+impl Fds {
     const DEFAULT_VALUE: [u8; 4] = [4, 0, 0, 0];
     pub fn total_size(&self) -> usize {
         molecule::unpack_number(self.as_slice()) as usize
@@ -1378,34 +1378,34 @@ impl Pipes {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    pub fn get(&self, idx: usize) -> Option<Pipe> {
+    pub fn get(&self, idx: usize) -> Option<Fd> {
         if idx >= self.len() {
             None
         } else {
             Some(self.get_unchecked(idx))
         }
     }
-    pub fn get_unchecked(&self, idx: usize) -> Pipe {
+    pub fn get_unchecked(&self, idx: usize) -> Fd {
         let slice = self.as_slice();
         let start_idx = molecule::NUMBER_SIZE * (1 + idx);
         let start = molecule::unpack_number(&slice[start_idx..]) as usize;
         if idx == self.len() - 1 {
-            Pipe::new_unchecked(self.0.slice(start..))
+            Fd::new_unchecked(self.0.slice(start..))
         } else {
             let end_idx = start_idx + molecule::NUMBER_SIZE;
             let end = molecule::unpack_number(&slice[end_idx..]) as usize;
-            Pipe::new_unchecked(self.0.slice(start..end))
+            Fd::new_unchecked(self.0.slice(start..end))
         }
     }
-    pub fn as_reader<'r>(&'r self) -> PipesReader<'r> {
-        PipesReader::new_unchecked(self.as_slice())
+    pub fn as_reader<'r>(&'r self) -> FdsReader<'r> {
+        FdsReader::new_unchecked(self.as_slice())
     }
 }
-impl molecule::prelude::Entity for Pipes {
-    type Builder = PipesBuilder;
-    const NAME: &'static str = "Pipes";
+impl molecule::prelude::Entity for Fds {
+    type Builder = FdsBuilder;
+    const NAME: &'static str = "Fds";
     fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
-        Pipes(data)
+        Fds(data)
     }
     fn as_bytes(&self) -> molecule::bytes::Bytes {
         self.0.clone()
@@ -1414,10 +1414,10 @@ impl molecule::prelude::Entity for Pipes {
         &self.0[..]
     }
     fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipesReader::from_slice(slice).map(|reader| reader.to_entity())
+        FdsReader::from_slice(slice).map(|reader| reader.to_entity())
     }
     fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
-        PipesReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+        FdsReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
     }
     fn new_builder() -> Self::Builder {
         ::core::default::Default::default()
@@ -1427,8 +1427,8 @@ impl molecule::prelude::Entity for Pipes {
     }
 }
 #[derive(Clone, Copy)]
-pub struct PipesReader<'r>(&'r [u8]);
-impl<'r> ::core::fmt::LowerHex for PipesReader<'r> {
+pub struct FdsReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for FdsReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         use molecule::hex_string;
         if f.alternate() {
@@ -1437,12 +1437,12 @@ impl<'r> ::core::fmt::LowerHex for PipesReader<'r> {
         write!(f, "{}", hex_string(self.as_slice()))
     }
 }
-impl<'r> ::core::fmt::Debug for PipesReader<'r> {
+impl<'r> ::core::fmt::Debug for FdsReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{}({:#x})", Self::NAME, self)
     }
 }
-impl<'r> ::core::fmt::Display for PipesReader<'r> {
+impl<'r> ::core::fmt::Display for FdsReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} [", Self::NAME)?;
         for i in 0..self.len() {
@@ -1455,7 +1455,7 @@ impl<'r> ::core::fmt::Display for PipesReader<'r> {
         write!(f, "]")
     }
 }
-impl<'r> PipesReader<'r> {
+impl<'r> FdsReader<'r> {
     pub fn total_size(&self) -> usize {
         molecule::unpack_number(self.as_slice()) as usize
     }
@@ -1472,34 +1472,34 @@ impl<'r> PipesReader<'r> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    pub fn get(&self, idx: usize) -> Option<PipeReader<'r>> {
+    pub fn get(&self, idx: usize) -> Option<FdReader<'r>> {
         if idx >= self.len() {
             None
         } else {
             Some(self.get_unchecked(idx))
         }
     }
-    pub fn get_unchecked(&self, idx: usize) -> PipeReader<'r> {
+    pub fn get_unchecked(&self, idx: usize) -> FdReader<'r> {
         let slice = self.as_slice();
         let start_idx = molecule::NUMBER_SIZE * (1 + idx);
         let start = molecule::unpack_number(&slice[start_idx..]) as usize;
         if idx == self.len() - 1 {
-            PipeReader::new_unchecked(&self.as_slice()[start..])
+            FdReader::new_unchecked(&self.as_slice()[start..])
         } else {
             let end_idx = start_idx + molecule::NUMBER_SIZE;
             let end = molecule::unpack_number(&slice[end_idx..]) as usize;
-            PipeReader::new_unchecked(&self.as_slice()[start..end])
+            FdReader::new_unchecked(&self.as_slice()[start..end])
         }
     }
 }
-impl<'r> molecule::prelude::Reader<'r> for PipesReader<'r> {
-    type Entity = Pipes;
-    const NAME: &'static str = "PipesReader";
+impl<'r> molecule::prelude::Reader<'r> for FdsReader<'r> {
+    type Entity = Fds;
+    const NAME: &'static str = "FdsReader";
     fn to_entity(&self) -> Self::Entity {
         Self::Entity::new_unchecked(self.as_slice().to_owned().into())
     }
     fn new_unchecked(slice: &'r [u8]) -> Self {
-        PipesReader(slice)
+        FdsReader(slice)
     }
     fn as_slice(&self) -> &'r [u8] {
         self.0
@@ -1543,37 +1543,37 @@ impl<'r> molecule::prelude::Reader<'r> for PipesReader<'r> {
         for pair in offsets.windows(2) {
             let start = pair[0];
             let end = pair[1];
-            PipeReader::verify(&slice[start..end], compatible)?;
+            FdReader::verify(&slice[start..end], compatible)?;
         }
         Ok(())
     }
 }
 #[derive(Debug, Default)]
-pub struct PipesBuilder(pub(crate) Vec<Pipe>);
-impl PipesBuilder {
-    pub fn set(mut self, v: Vec<Pipe>) -> Self {
+pub struct FdsBuilder(pub(crate) Vec<Fd>);
+impl FdsBuilder {
+    pub fn set(mut self, v: Vec<Fd>) -> Self {
         self.0 = v;
         self
     }
-    pub fn push(mut self, v: Pipe) -> Self {
+    pub fn push(mut self, v: Fd) -> Self {
         self.0.push(v);
         self
     }
-    pub fn extend<T: ::core::iter::IntoIterator<Item = Pipe>>(mut self, iter: T) -> Self {
+    pub fn extend<T: ::core::iter::IntoIterator<Item = Fd>>(mut self, iter: T) -> Self {
         for elem in iter {
             self.0.push(elem);
         }
         self
     }
-    pub fn replace(&mut self, index: usize, v: Pipe) -> Option<Pipe> {
+    pub fn replace(&mut self, index: usize, v: Fd) -> Option<Fd> {
         self.0
             .get_mut(index)
             .map(|item| ::core::mem::replace(item, v))
     }
 }
-impl molecule::prelude::Builder for PipesBuilder {
-    type Entity = Pipes;
-    const NAME: &'static str = "PipesBuilder";
+impl molecule::prelude::Builder for FdsBuilder {
+    type Entity = Fds;
+    const NAME: &'static str = "FdsBuilder";
     fn expected_length(&self) -> usize {
         molecule::NUMBER_SIZE * (self.0.len() + 1)
             + self
@@ -1613,12 +1613,12 @@ impl molecule::prelude::Builder for PipesBuilder {
         let mut inner = Vec::with_capacity(self.expected_length());
         self.write(&mut inner)
             .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
-        Pipes::new_unchecked(inner.into())
+        Fds::new_unchecked(inner.into())
     }
 }
-pub struct PipesIterator(Pipes, usize, usize);
-impl ::core::iter::Iterator for PipesIterator {
-    type Item = Pipe;
+pub struct FdsIterator(Fds, usize, usize);
+impl ::core::iter::Iterator for FdsIterator {
+    type Item = Fd;
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 >= self.2 {
             None
@@ -1629,27 +1629,27 @@ impl ::core::iter::Iterator for PipesIterator {
         }
     }
 }
-impl ::core::iter::ExactSizeIterator for PipesIterator {
+impl ::core::iter::ExactSizeIterator for FdsIterator {
     fn len(&self) -> usize {
         self.2 - self.1
     }
 }
-impl ::core::iter::IntoIterator for Pipes {
-    type Item = Pipe;
-    type IntoIter = PipesIterator;
+impl ::core::iter::IntoIterator for Fds {
+    type Item = Fd;
+    type IntoIter = FdsIterator;
     fn into_iter(self) -> Self::IntoIter {
         let len = self.len();
-        PipesIterator(self, 0, len)
+        FdsIterator(self, 0, len)
     }
 }
-impl<'r> PipesReader<'r> {
-    pub fn iter<'t>(&'t self) -> PipesReaderIterator<'t, 'r> {
-        PipesReaderIterator(&self, 0, self.len())
+impl<'r> FdsReader<'r> {
+    pub fn iter<'t>(&'t self) -> FdsReaderIterator<'t, 'r> {
+        FdsReaderIterator(&self, 0, self.len())
     }
 }
-pub struct PipesReaderIterator<'t, 'r>(&'t PipesReader<'r>, usize, usize);
-impl<'t: 'r, 'r> ::core::iter::Iterator for PipesReaderIterator<'t, 'r> {
-    type Item = PipeReader<'t>;
+pub struct FdsReaderIterator<'t, 'r>(&'t FdsReader<'r>, usize, usize);
+impl<'t: 'r, 'r> ::core::iter::Iterator for FdsReaderIterator<'t, 'r> {
+    type Item = FdReader<'t>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 >= self.2 {
             None
@@ -1660,7 +1660,7 @@ impl<'t: 'r, 'r> ::core::iter::Iterator for PipesReaderIterator<'t, 'r> {
         }
     }
 }
-impl<'t: 'r, 'r> ::core::iter::ExactSizeIterator for PipesReaderIterator<'t, 'r> {
+impl<'t: 'r, 'r> ::core::iter::ExactSizeIterator for FdsReaderIterator<'t, 'r> {
     fn len(&self) -> usize {
         self.2 - self.1
     }
@@ -1685,9 +1685,9 @@ impl ::core::fmt::Display for Write {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "from", self.from())?;
-        write!(f, ", {}: {}", "from_pipe", self.from_pipe())?;
+        write!(f, ", {}: {}", "from_fd", self.from_fd())?;
         write!(f, ", {}: {}", "to", self.to())?;
-        write!(f, ", {}: {}", "to_pipe", self.to_pipe())?;
+        write!(f, ", {}: {}", "to_fd", self.to_fd())?;
         write!(f, ", {}: {}", "data", self.data())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
@@ -1731,11 +1731,11 @@ impl Write {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         VmIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn from_pipe(&self) -> PipeIndex {
+    pub fn from_fd(&self) -> FdIndex {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        PipeIndex::new_unchecked(self.0.slice(start..end))
+        FdIndex::new_unchecked(self.0.slice(start..end))
     }
     pub fn to(&self) -> VmIndex {
         let slice = self.as_slice();
@@ -1743,11 +1743,11 @@ impl Write {
         let end = molecule::unpack_number(&slice[16..]) as usize;
         VmIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn to_pipe(&self) -> PipeIndex {
+    pub fn to_fd(&self) -> FdIndex {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[16..]) as usize;
         let end = molecule::unpack_number(&slice[20..]) as usize;
-        PipeIndex::new_unchecked(self.0.slice(start..end))
+        FdIndex::new_unchecked(self.0.slice(start..end))
     }
     pub fn data(&self) -> Bytes {
         let slice = self.as_slice();
@@ -1787,9 +1787,9 @@ impl molecule::prelude::Entity for Write {
     fn as_builder(self) -> Self::Builder {
         Self::new_builder()
             .from(self.from())
-            .from_pipe(self.from_pipe())
+            .from_fd(self.from_fd())
             .to(self.to())
-            .to_pipe(self.to_pipe())
+            .to_fd(self.to_fd())
             .data(self.data())
     }
 }
@@ -1813,9 +1813,9 @@ impl<'r> ::core::fmt::Display for WriteReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "from", self.from())?;
-        write!(f, ", {}: {}", "from_pipe", self.from_pipe())?;
+        write!(f, ", {}: {}", "from_fd", self.from_fd())?;
         write!(f, ", {}: {}", "to", self.to())?;
-        write!(f, ", {}: {}", "to_pipe", self.to_pipe())?;
+        write!(f, ", {}: {}", "to_fd", self.to_fd())?;
         write!(f, ", {}: {}", "data", self.data())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
@@ -1848,11 +1848,11 @@ impl<'r> WriteReader<'r> {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         VmIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn from_pipe(&self) -> PipeIndexReader<'r> {
+    pub fn from_fd(&self) -> FdIndexReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        PipeIndexReader::new_unchecked(&self.as_slice()[start..end])
+        FdIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
     pub fn to(&self) -> VmIndexReader<'r> {
         let slice = self.as_slice();
@@ -1860,11 +1860,11 @@ impl<'r> WriteReader<'r> {
         let end = molecule::unpack_number(&slice[16..]) as usize;
         VmIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn to_pipe(&self) -> PipeIndexReader<'r> {
+    pub fn to_fd(&self) -> FdIndexReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[16..]) as usize;
         let end = molecule::unpack_number(&slice[20..]) as usize;
-        PipeIndexReader::new_unchecked(&self.as_slice()[start..end])
+        FdIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
     pub fn data(&self) -> BytesReader<'r> {
         let slice = self.as_slice();
@@ -1924,9 +1924,9 @@ impl<'r> molecule::prelude::Reader<'r> for WriteReader<'r> {
             return ve!(Self, OffsetsNotMatch);
         }
         VmIndexReader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
-        PipeIndexReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        FdIndexReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
         VmIndexReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
-        PipeIndexReader::verify(&slice[offsets[3]..offsets[4]], compatible)?;
+        FdIndexReader::verify(&slice[offsets[3]..offsets[4]], compatible)?;
         BytesReader::verify(&slice[offsets[4]..offsets[5]], compatible)?;
         Ok(())
     }
@@ -1934,9 +1934,9 @@ impl<'r> molecule::prelude::Reader<'r> for WriteReader<'r> {
 #[derive(Debug, Default)]
 pub struct WriteBuilder {
     pub(crate) from: VmIndex,
-    pub(crate) from_pipe: PipeIndex,
+    pub(crate) from_fd: FdIndex,
     pub(crate) to: VmIndex,
-    pub(crate) to_pipe: PipeIndex,
+    pub(crate) to_fd: FdIndex,
     pub(crate) data: Bytes,
 }
 impl WriteBuilder {
@@ -1945,16 +1945,16 @@ impl WriteBuilder {
         self.from = v;
         self
     }
-    pub fn from_pipe(mut self, v: PipeIndex) -> Self {
-        self.from_pipe = v;
+    pub fn from_fd(mut self, v: FdIndex) -> Self {
+        self.from_fd = v;
         self
     }
     pub fn to(mut self, v: VmIndex) -> Self {
         self.to = v;
         self
     }
-    pub fn to_pipe(mut self, v: PipeIndex) -> Self {
-        self.to_pipe = v;
+    pub fn to_fd(mut self, v: FdIndex) -> Self {
+        self.to_fd = v;
         self
     }
     pub fn data(mut self, v: Bytes) -> Self {
@@ -1968,9 +1968,9 @@ impl molecule::prelude::Builder for WriteBuilder {
     fn expected_length(&self) -> usize {
         molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
             + self.from.as_slice().len()
-            + self.from_pipe.as_slice().len()
+            + self.from_fd.as_slice().len()
             + self.to.as_slice().len()
-            + self.to_pipe.as_slice().len()
+            + self.to_fd.as_slice().len()
             + self.data.as_slice().len()
     }
     fn write<W: molecule::io::Write>(&self, writer: &mut W) -> molecule::io::Result<()> {
@@ -1979,11 +1979,11 @@ impl molecule::prelude::Builder for WriteBuilder {
         offsets.push(total_size);
         total_size += self.from.as_slice().len();
         offsets.push(total_size);
-        total_size += self.from_pipe.as_slice().len();
+        total_size += self.from_fd.as_slice().len();
         offsets.push(total_size);
         total_size += self.to.as_slice().len();
         offsets.push(total_size);
-        total_size += self.to_pipe.as_slice().len();
+        total_size += self.to_fd.as_slice().len();
         offsets.push(total_size);
         total_size += self.data.as_slice().len();
         writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
@@ -1991,9 +1991,9 @@ impl molecule::prelude::Builder for WriteBuilder {
             writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
         }
         writer.write_all(self.from.as_slice())?;
-        writer.write_all(self.from_pipe.as_slice())?;
+        writer.write_all(self.from_fd.as_slice())?;
         writer.write_all(self.to.as_slice())?;
-        writer.write_all(self.to_pipe.as_slice())?;
+        writer.write_all(self.to_fd.as_slice())?;
         writer.write_all(self.data.as_slice())?;
         Ok(())
     }
@@ -2365,7 +2365,7 @@ impl ::core::fmt::Display for Spawn {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "from", self.from())?;
         write!(f, ", {}: {}", "child", self.child())?;
-        write!(f, ", {}: {}", "pipes", self.pipes())?;
+        write!(f, ", {}: {}", "fds", self.fds())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
             write!(f, ", .. ({} fields)", extra_count)?;
@@ -2413,14 +2413,14 @@ impl Spawn {
         let end = molecule::unpack_number(&slice[12..]) as usize;
         VmIndex::new_unchecked(self.0.slice(start..end))
     }
-    pub fn pipes(&self) -> PipeIndices {
+    pub fn fds(&self) -> FdIndices {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[12..]) as usize;
         if self.has_extra_fields() {
             let end = molecule::unpack_number(&slice[16..]) as usize;
-            PipeIndices::new_unchecked(self.0.slice(start..end))
+            FdIndices::new_unchecked(self.0.slice(start..end))
         } else {
-            PipeIndices::new_unchecked(self.0.slice(start..))
+            FdIndices::new_unchecked(self.0.slice(start..))
         }
     }
     pub fn as_reader<'r>(&'r self) -> SpawnReader<'r> {
@@ -2452,7 +2452,7 @@ impl molecule::prelude::Entity for Spawn {
         Self::new_builder()
             .from(self.from())
             .child(self.child())
-            .pipes(self.pipes())
+            .fds(self.fds())
     }
 }
 #[derive(Clone, Copy)]
@@ -2476,7 +2476,7 @@ impl<'r> ::core::fmt::Display for SpawnReader<'r> {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "from", self.from())?;
         write!(f, ", {}: {}", "child", self.child())?;
-        write!(f, ", {}: {}", "pipes", self.pipes())?;
+        write!(f, ", {}: {}", "fds", self.fds())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
             write!(f, ", .. ({} fields)", extra_count)?;
@@ -2514,14 +2514,14 @@ impl<'r> SpawnReader<'r> {
         let end = molecule::unpack_number(&slice[12..]) as usize;
         VmIndexReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn pipes(&self) -> PipeIndicesReader<'r> {
+    pub fn fds(&self) -> FdIndicesReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[12..]) as usize;
         if self.has_extra_fields() {
             let end = molecule::unpack_number(&slice[16..]) as usize;
-            PipeIndicesReader::new_unchecked(&self.as_slice()[start..end])
+            FdIndicesReader::new_unchecked(&self.as_slice()[start..end])
         } else {
-            PipeIndicesReader::new_unchecked(&self.as_slice()[start..])
+            FdIndicesReader::new_unchecked(&self.as_slice()[start..])
         }
     }
 }
@@ -2573,7 +2573,7 @@ impl<'r> molecule::prelude::Reader<'r> for SpawnReader<'r> {
         }
         VmIndexReader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
         VmIndexReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
-        PipeIndicesReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
+        FdIndicesReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
         Ok(())
     }
 }
@@ -2581,7 +2581,7 @@ impl<'r> molecule::prelude::Reader<'r> for SpawnReader<'r> {
 pub struct SpawnBuilder {
     pub(crate) from: VmIndex,
     pub(crate) child: VmIndex,
-    pub(crate) pipes: PipeIndices,
+    pub(crate) fds: FdIndices,
 }
 impl SpawnBuilder {
     pub const FIELD_COUNT: usize = 3;
@@ -2593,8 +2593,8 @@ impl SpawnBuilder {
         self.child = v;
         self
     }
-    pub fn pipes(mut self, v: PipeIndices) -> Self {
-        self.pipes = v;
+    pub fn fds(mut self, v: FdIndices) -> Self {
+        self.fds = v;
         self
     }
 }
@@ -2605,7 +2605,7 @@ impl molecule::prelude::Builder for SpawnBuilder {
         molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
             + self.from.as_slice().len()
             + self.child.as_slice().len()
-            + self.pipes.as_slice().len()
+            + self.fds.as_slice().len()
     }
     fn write<W: molecule::io::Write>(&self, writer: &mut W) -> molecule::io::Result<()> {
         let mut total_size = molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1);
@@ -2615,14 +2615,14 @@ impl molecule::prelude::Builder for SpawnBuilder {
         offsets.push(total_size);
         total_size += self.child.as_slice().len();
         offsets.push(total_size);
-        total_size += self.pipes.as_slice().len();
+        total_size += self.fds.as_slice().len();
         writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
         for offset in offsets.into_iter() {
             writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
         }
         writer.write_all(self.from.as_slice())?;
         writer.write_all(self.child.as_slice())?;
-        writer.write_all(self.pipes.as_slice())?;
+        writer.write_all(self.fds.as_slice())?;
         Ok(())
     }
     fn build(&self) -> Self::Entity {
@@ -2992,7 +2992,7 @@ impl ::core::fmt::Display for Data {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "spawns", self.spawns())?;
-        write!(f, ", {}: {}", "pipes", self.pipes())?;
+        write!(f, ", {}: {}", "fds", self.fds())?;
         write!(f, ", {}: {}", "writes", self.writes())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
@@ -3034,11 +3034,11 @@ impl Data {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         Spawns::new_unchecked(self.0.slice(start..end))
     }
-    pub fn pipes(&self) -> Pipes {
+    pub fn fds(&self) -> Fds {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        Pipes::new_unchecked(self.0.slice(start..end))
+        Fds::new_unchecked(self.0.slice(start..end))
     }
     pub fn writes(&self) -> Writes {
         let slice = self.as_slice();
@@ -3078,7 +3078,7 @@ impl molecule::prelude::Entity for Data {
     fn as_builder(self) -> Self::Builder {
         Self::new_builder()
             .spawns(self.spawns())
-            .pipes(self.pipes())
+            .fds(self.fds())
             .writes(self.writes())
     }
 }
@@ -3102,7 +3102,7 @@ impl<'r> ::core::fmt::Display for DataReader<'r> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         write!(f, "{} {{ ", Self::NAME)?;
         write!(f, "{}: {}", "spawns", self.spawns())?;
-        write!(f, ", {}: {}", "pipes", self.pipes())?;
+        write!(f, ", {}: {}", "fds", self.fds())?;
         write!(f, ", {}: {}", "writes", self.writes())?;
         let extra_count = self.count_extra_fields();
         if extra_count != 0 {
@@ -3135,11 +3135,11 @@ impl<'r> DataReader<'r> {
         let end = molecule::unpack_number(&slice[8..]) as usize;
         SpawnsReader::new_unchecked(&self.as_slice()[start..end])
     }
-    pub fn pipes(&self) -> PipesReader<'r> {
+    pub fn fds(&self) -> FdsReader<'r> {
         let slice = self.as_slice();
         let start = molecule::unpack_number(&slice[8..]) as usize;
         let end = molecule::unpack_number(&slice[12..]) as usize;
-        PipesReader::new_unchecked(&self.as_slice()[start..end])
+        FdsReader::new_unchecked(&self.as_slice()[start..end])
     }
     pub fn writes(&self) -> WritesReader<'r> {
         let slice = self.as_slice();
@@ -3199,7 +3199,7 @@ impl<'r> molecule::prelude::Reader<'r> for DataReader<'r> {
             return ve!(Self, OffsetsNotMatch);
         }
         SpawnsReader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
-        PipesReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        FdsReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
         WritesReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
         Ok(())
     }
@@ -3207,7 +3207,7 @@ impl<'r> molecule::prelude::Reader<'r> for DataReader<'r> {
 #[derive(Debug, Default)]
 pub struct DataBuilder {
     pub(crate) spawns: Spawns,
-    pub(crate) pipes: Pipes,
+    pub(crate) fds: Fds,
     pub(crate) writes: Writes,
 }
 impl DataBuilder {
@@ -3216,8 +3216,8 @@ impl DataBuilder {
         self.spawns = v;
         self
     }
-    pub fn pipes(mut self, v: Pipes) -> Self {
-        self.pipes = v;
+    pub fn fds(mut self, v: Fds) -> Self {
+        self.fds = v;
         self
     }
     pub fn writes(mut self, v: Writes) -> Self {
@@ -3231,7 +3231,7 @@ impl molecule::prelude::Builder for DataBuilder {
     fn expected_length(&self) -> usize {
         molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
             + self.spawns.as_slice().len()
-            + self.pipes.as_slice().len()
+            + self.fds.as_slice().len()
             + self.writes.as_slice().len()
     }
     fn write<W: molecule::io::Write>(&self, writer: &mut W) -> molecule::io::Result<()> {
@@ -3240,7 +3240,7 @@ impl molecule::prelude::Builder for DataBuilder {
         offsets.push(total_size);
         total_size += self.spawns.as_slice().len();
         offsets.push(total_size);
-        total_size += self.pipes.as_slice().len();
+        total_size += self.fds.as_slice().len();
         offsets.push(total_size);
         total_size += self.writes.as_slice().len();
         writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
@@ -3248,7 +3248,7 @@ impl molecule::prelude::Builder for DataBuilder {
             writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
         }
         writer.write_all(self.spawns.as_slice())?;
-        writer.write_all(self.pipes.as_slice())?;
+        writer.write_all(self.fds.as_slice())?;
         writer.write_all(self.writes.as_slice())?;
         Ok(())
     }
