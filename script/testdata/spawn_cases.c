@@ -336,7 +336,14 @@ exit:
 
 int parent_max_pipe_limits() {
     const char* argv[2] = {"", 0};
-    int err = simple_spawn_args(0, 1, argv);
+    int err = 0;
+    uint64_t fd[2] = {0};
+    for (int i = 0; i < 16; i++) {
+        err = ckb_pipe(fd);
+        CHECK(err);
+    }
+    err = simple_spawn_args(0, 1, argv);
+exit:
     return err;
 }
 
