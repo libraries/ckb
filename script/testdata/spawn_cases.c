@@ -7,10 +7,12 @@ int parent_simple_read_write(uint64_t* pid) {
 
     err = full_spawn(0, 1, argv, fds, pid);
     // write
-    uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                         0xff, 0xff, 0xff, 0xff, 0xff};
     for (size_t i = 0; i < 7; i++) {
         size_t actual_length = 0;
-        err = write_exact(fds[CKB_STDOUT], block, sizeof(block), &actual_length);
+        err =
+            write_exact(fds[CKB_STDOUT], block, sizeof(block), &actual_length);
         CHECK(err);
         CHECK2(actual_length == sizeof(block), -2);
     }
@@ -38,7 +40,8 @@ int child_simple_read_write() {
     for (size_t i = 0; i < 11; i++) {
         uint8_t block[7] = {0};
         size_t actual_length = 0;
-        err = read_exact(inherited_fds[CKB_STDIN], block, sizeof(block), &actual_length);
+        err = read_exact(inherited_fds[CKB_STDIN], block, sizeof(block),
+                         &actual_length);
         CHECK(err);
         CHECK2(actual_length == sizeof(block), -2);
         for (size_t j = 0; j < sizeof(block); j++) {
@@ -46,10 +49,12 @@ int child_simple_read_write() {
         }
     }
     // write
-    uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    uint8_t block[11] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                         0xff, 0xff, 0xff, 0xff, 0xff};
     for (size_t i = 0; i < 7; i++) {
         size_t actual_length = 0;
-        err = write_exact(inherited_fds[CKB_STDOUT], block, sizeof(block), &actual_length);
+        err = write_exact(inherited_fds[CKB_STDOUT], block, sizeof(block),
+                          &actual_length);
         CHECK(err);
         CHECK2(actual_length == sizeof(block), -2);
     }
@@ -107,7 +112,10 @@ int parent_invalid_fd(uint64_t* pid) {
     // pass fd to child to make it invalid
     const char* argv[] = {"", 0};
     uint64_t inherited_fds[2] = {fds[0], 0};
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = inherited_fds};
+    spawn_args_t spgs = {.argc = 1,
+                         .argv = argv,
+                         .process_id = pid,
+                         .inherited_fds = inherited_fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK(err);
     err = ckb_read(fds[0], data, &data_length);
@@ -180,7 +188,8 @@ int child_read_write_with_close() {
     // read 100 bytes and close
     uint8_t block[100] = {0};
     size_t actual_length = 0;
-    err = read_exact(inherited_fds[CKB_STDIN], block, sizeof(block), &actual_length);
+    err = read_exact(inherited_fds[CKB_STDIN], block, sizeof(block),
+                     &actual_length);
     CHECK(err);
     CHECK2(actual_length == sizeof(block), -2);
     for (size_t j = 0; j < sizeof(block); j++) {
@@ -223,7 +232,10 @@ int parent_inherited_fds(uint64_t* pid) {
         err = ckb_pipe(&inherited_fds[i * 2]);
         CHECK(err);
     }
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = inherited_fds};
+    spawn_args_t spgs = {.argc = 1,
+                         .argv = argv,
+                         .process_id = pid,
+                         .inherited_fds = inherited_fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK(err);
 exit:
@@ -268,7 +280,8 @@ int parent_inherited_fds_without_owner(uint64_t* pid) {
     const char* argv[] = {"", 0};
     uint64_t fds[3] = {0xFF, 0xEF, 0};
 
-    spawn_args_t spgs = {.argc = 1, .argv = argv, .process_id = pid, .inherited_fds = fds};
+    spawn_args_t spgs = {
+        .argc = 1, .argv = argv, .process_id = pid, .inherited_fds = fds};
     err = ckb_spawn(0, CKB_SOURCE_CELL_DEP, 0, 0, &spgs);
     CHECK2(err == CKB_INVALID_PIPE, -2);
 
@@ -336,14 +349,21 @@ exit:
 
 int parent_max_fd_limits() {
     const char* argv[2] = {"", 0};
-    int err = simple_spawn_args(0, 1, argv);
+    int err = 0;
+    uint64_t fd[2] = {0};
+    for (int i = 0; i < 16; i++) {
+        err = ckb_pipe(fd);
+        CHECK(err);
+    }
+    err = simple_spawn_args(0, 1, argv);
+exit:
     return err;
 }
 
 int child_max_fd_limits() {
     int err = 0;
     uint64_t fd[2] = {0};
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 16; i++) {
         err = ckb_pipe(fd);
         CHECK(err);
     }
