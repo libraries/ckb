@@ -362,6 +362,29 @@ exit:
     return err;
 }
 
+int parent_close_invalid_fd() {
+    uint64_t fds[2] = {0};
+    int err = ckb_pipe(fds);
+    CHECK(err);
+
+    err = ckb_close(fds[CKB_STDIN] + 32);
+    CHECK2(err == 6, -1);
+
+    err = ckb_close(fds[CKB_STDIN]);
+    CHECK(err);
+    err = ckb_close(fds[CKB_STDOUT]);
+    CHECK(err);
+
+    err = ckb_close(fds[CKB_STDIN]);
+    CHECK2(err == 6, -1);
+    err = ckb_close(fds[CKB_STDOUT]);
+    CHECK2(err == 6, -1);
+
+    err = 0;
+exit:
+    return err;
+}
+
 int parent_entry(int case_id) {
     int err = 0;
     uint64_t pid = 0;
@@ -389,6 +412,8 @@ int parent_entry(int case_id) {
     } else if (case_id == 11) {
         err = parent_max_pipe_limits(&pid);
         return err;
+    } else if (case_id == 12) {
+        return parent_close_invalid_fd(&pid);
     } else {
         CHECK2(false, -2);
     }
@@ -425,6 +450,8 @@ int child_entry(int case_id) {
         return child_max_vms_count();
     } else if (case_id == 11) {
         return child_max_pipe_limits();
+    } else if (case_id == 12) {
+        return 0;
     } else {
         return -1;
     }

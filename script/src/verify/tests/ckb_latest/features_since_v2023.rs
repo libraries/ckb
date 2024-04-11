@@ -1184,3 +1184,9 @@ proptest! {
         assert_eq!(result.is_ok(), script_version >= ScriptVersion::V2);
     }
 }
+
+#[test]
+fn check_spawn_close_invalid_fd() {
+    let result = simple_spawn_test("testdata/spawn_cases", &[12]);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+}
