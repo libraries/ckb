@@ -67,6 +67,7 @@ where
     // MessageBox is expected to be empty before returning from `run`
     // function, there is no need to persist messages.
     message_box: Arc<Mutex<Vec<Message>>>,
+    resume_suspend_count: usize,
 }
 
 impl<DL> Scheduler<DL>
@@ -95,6 +96,7 @@ where
             suspended: BTreeMap::default(),
             message_box,
             terminated_vms: BTreeMap::default(),
+            resume_suspend_count: 0,
         }
     }
 
@@ -133,6 +135,7 @@ where
                 .collect(),
             message_box,
             terminated_vms: full.terminated_vms.into_iter().collect(),
+            resume_suspend_count: 0,
         }
     }
 
@@ -764,6 +767,10 @@ where
         {
             let mut sc = context.snapshot2_context().lock().expect("lock");
             sc.resume(&mut machine.machine, snapshot)?;
+            self.resume_suspend_count += 1;
+            if self.resume_suspend_count % 1000 == 0 {
+                println!("resume_suspend_count = {}", self.resume_suspend_count);
+            }
         }
         self.instantiated.insert(*id, (context, machine));
         self.suspended.remove(id);
@@ -786,6 +793,10 @@ where
             let sc = context.snapshot2_context().lock().expect("lock");
             sc.make_snapshot(&mut machine.machine)?
         };
+        self.resume_suspend_count += 1;
+        if self.resume_suspend_count % 1000 == 0 {
+            println!("resume_suspend_count = {}", self.resume_suspend_count);
+        }
         self.suspended.insert(*id, snapshot);
         self.instantiated.remove(id);
         Ok(())
