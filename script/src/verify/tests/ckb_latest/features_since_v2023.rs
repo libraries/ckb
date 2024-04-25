@@ -1306,7 +1306,7 @@ fn check_spawn_io_cycles() {
     if SCRIPT_VERSION != ScriptVersion::V2 {
         return;
     }
-    
+
     let offset_size = 1024;
     let r = spawn_io_test(128, true);
     r.unwrap();
