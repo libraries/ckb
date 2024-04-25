@@ -1303,8 +1303,11 @@ fn spawn_io_test(io_size: u64, enable_check: bool) -> Result<u64, Error> {
 
 #[test]
 fn check_spawn_io_cycles() {
+    if SCRIPT_VERSION != ScriptVersion::V2 {
+        return;
+    }
+    
     let offset_size = 1024;
-
     let r = spawn_io_test(128, true);
     r.unwrap();
     let r = spawn_io_test(128 + offset_size, true);
