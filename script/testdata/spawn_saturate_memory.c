@@ -24,7 +24,7 @@ int main(int argc, const char* argv[]) {
         err = ckb_inherited_file_descriptors(inherited_fds, &inherited_fds_length);
         uint64_t length = MAX_MEMORY;
         // Write a piece of data starting from address 0 with a size of 4M.
-        // Internally, it is cached before being read out.
+        // It should not consume any memory.
         err = ckb_write(inherited_fds[CKB_STDOUT], 0, &length);
         // should be blocked forever since there is no reading on other end
         CHECK(err);
