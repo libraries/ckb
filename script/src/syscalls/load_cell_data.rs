@@ -38,10 +38,7 @@ where
             "a0: {}, a1: {}({}), a2: {}, a3: {}, a4: {}",
             machine.registers()[A0].to_u64(),
             machine.registers()[A1].to_u64(),
-            machine
-                .memory_mut()
-                .load64(&size_addr)?
-                .to_u64(),
+            machine.memory_mut().load64(&size_addr)?.to_u64(),
             machine.registers()[A2].to_u64(),
             machine.registers()[A3].to_u64(),
             machine.registers()[A4].to_u64(),
@@ -94,7 +91,6 @@ where
                 }
                 Err(e) => return Err(e),
             };
-        println!("{} {}", full_size, wrote_size);
         machine
             .memory_mut()
             .store64(&size_addr, &Mac::REG::from_u64(full_size))?;
