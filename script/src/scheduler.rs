@@ -4,13 +4,12 @@ use crate::syscalls::{
     SUCCESS, WAIT_FAILURE,
 };
 use crate::types::MachineContext;
-use crate::verify::TransactionScriptsSyscallsGenerator;
-use crate::ScriptVersion;
-
 use crate::types::{
     CoreMachineType, DataPieceId, Fd, FdArgs, FullSuspendedState, Machine, Message, ReadState,
     RunMode, TxData, VmId, VmState, WriteState, FIRST_FD_SLOT, FIRST_VM_ID,
 };
+use crate::verify::TransactionScriptsSyscallsGenerator;
+use crate::ScriptVersion;
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::Cycle;
 use ckb_vm::snapshot2::Snapshot2Context;
@@ -18,13 +17,14 @@ use ckb_vm::{
     bytes::Bytes,
     cost_model::estimate_cycles,
     elf::parse_elf,
-    machine::{CoreMachine, DefaultMachineBuilder, Pause, SupportMachine},
+    machine::{CompleteMachine, CoreMachine, DefaultMachineBuilder, Pause, SupportMachine},
     memory::Memory,
     registers::A0,
     snapshot2::Snapshot2,
     Error, Register,
 };
 use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
 pub const ROOT_VM_ID: VmId = FIRST_VM_ID;
@@ -38,9 +38,12 @@ pub const MAX_FDS: u64 = 64;
 /// A scheduler holds & manipulates a core, the scheduler also holds
 /// all CKB-VM machines, each CKB-VM machine also gets a mutable reference
 /// of the core for IO operations.
-pub struct Scheduler<DL>
+pub struct Scheduler<DL, TCore, SM, CM>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: CoreMachine + Memory,
+    SM: SupportMachine<REG = u64>,
+    CM: CompleteMachine<SM>,
 {
     tx_data: TxData<DL>,
     // In fact, Scheduler here has the potential to totally replace
@@ -48,7 +51,7 @@ where
     // implementation is strictly tied to TransactionScriptsVerifier, we
     // are using it here to save some extra code.
     script_version: ScriptVersion,
-    syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
+    syscalls_generator: TransactionScriptsSyscallsGenerator<DL, TCore>,
 
     total_cycles: Cycle,
     current_iteration_cycles: Cycle,
@@ -57,24 +60,30 @@ where
     states: BTreeMap<VmId, VmState>,
     fds: BTreeMap<Fd, VmId>,
     inherited_fd: BTreeMap<VmId, Vec<Fd>>,
-    instantiated: BTreeMap<VmId, (MachineContext<DL>, Machine)>,
+    instantiated: BTreeMap<VmId, (MachineContext<DL>, CM)>,
     suspended: BTreeMap<VmId, Snapshot2<DataPieceId>>,
     terminated_vms: BTreeMap<VmId, i8>,
 
     // MessageBox is expected to be empty before returning from `run`
     // function, there is no need to persist messages.
     message_box: Arc<Mutex<Vec<Message>>>,
+
+    _phantom1: PhantomData<TCore>,
+    _phantom2: PhantomData<SM>,
 }
 
-impl<DL> Scheduler<DL>
+impl<DL, TCore, SM, CM> Scheduler<DL, TCore, SM, CM>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: CoreMachine + Memory,
+    SM: SupportMachine<REG = u64>,
+    CM: CompleteMachine<SM>,
 {
     /// Create a new scheduler from empty state
     pub fn new(
         tx_data: TxData<DL>,
         script_version: ScriptVersion,
-        syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
+        syscalls_generator: TransactionScriptsSyscallsGenerator<DL, TCore>,
     ) -> Self {
         let message_box = Arc::clone(&syscalls_generator.message_box);
         Self {
@@ -92,6 +101,8 @@ where
             suspended: BTreeMap::default(),
             message_box,
             terminated_vms: BTreeMap::default(),
+            _phantom1: PhantomData::default(),
+            _phantom2: PhantomData::default(),
         }
     }
 
@@ -103,7 +114,7 @@ where
     pub fn resume(
         tx_data: TxData<DL>,
         script_version: ScriptVersion,
-        syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
+        syscalls_generator: TransactionScriptsSyscallsGenerator<DL, TCore>,
         full: FullSuspendedState,
     ) -> Self {
         let message_box = Arc::clone(&syscalls_generator.message_box);
@@ -130,6 +141,8 @@ where
                 .collect(),
             message_box,
             terminated_vms: full.terminated_vms.into_iter().collect(),
+            _phantom1: PhantomData::default(),
+            _phantom2: PhantomData::default(),
         };
         scheduler
             .ensure_vms_instantiated(&full.instantiated_ids)
@@ -207,7 +220,7 @@ where
 
         // At this point, root VM cannot be suspended
         let root_vm = &self.instantiated[&ROOT_VM_ID];
-        Ok((root_vm.1.machine.exit_code(), self.total_cycles))
+        Ok((root_vm.1.machine().exit_code(), self.total_cycles))
     }
 
     // This is internal function that does the actual VM execution loop.
@@ -233,10 +246,10 @@ where
             let (context, machine) = self.ensure_get_instantiated(&vm_id_to_run)?;
             context.set_base_cycles(total_cycles);
             machine.set_max_cycles(limit_cycles);
-            machine.machine.set_pause(pause);
+            machine.machine().set_pause(pause);
             let result = machine.run();
-            let cycles = machine.machine.cycles();
-            machine.machine.set_cycles(0);
+            let cycles = machine.machine().cycles();
+            machine.machine().set_cycles(0);
             self.current_iteration_cycles = self
                 .current_iteration_cycles
                 .checked_add(cycles)
@@ -276,10 +289,10 @@ where
                     for (vm_id, exit_code_addr) in joining_vms {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
                         machine
-                            .machine
+                            .machine()
                             .memory_mut()
                             .store8(&exit_code_addr, &u64::from_i8(code))?;
-                        machine.machine.set_register(A0, SUCCESS as u64);
+                        machine.machine().set_register(A0, SUCCESS as u64);
                         self.states.insert(vm_id, VmState::Runnable);
                     }
                     // Close fds
@@ -304,12 +317,12 @@ where
                     // All fds must belong to the correct owner
                     if args.fds.iter().any(|fd| self.fds.get(fd) != Some(&vm_id)) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, INVALID_FD as u64);
+                        machine.machine().set_register(A0, INVALID_FD as u64);
                         continue;
                     }
                     if self.suspended.len() + self.instantiated.len() > MAX_VMS_COUNT as usize {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, MAX_VMS_SPAWNED as u64);
+                        machine.machine().set_register(A0, MAX_VMS_SPAWNED as u64);
                         continue;
                     }
                     let spawned_vm_id =
@@ -324,26 +337,26 @@ where
 
                     let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
                     machine
-                        .machine
+                        .machine()
                         .memory_mut()
                         .store64(&args.process_id_addr, &spawned_vm_id)?;
-                    machine.machine.set_register(A0, SUCCESS as u64);
+                    machine.machine().set_register(A0, SUCCESS as u64);
                 }
                 Message::Wait(vm_id, args) => {
                     if let Some(exit_code) = self.terminated_vms.get(&args.target_id).copied() {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
                         machine
-                            .machine
+                            .machine()
                             .memory_mut()
                             .store8(&args.exit_code_addr, &u64::from_i8(exit_code))?;
-                        machine.machine.set_register(A0, SUCCESS as u64);
+                        machine.machine().set_register(A0, SUCCESS as u64);
                         self.states.insert(vm_id, VmState::Runnable);
                         self.terminated_vms.retain(|id, _| id != &args.target_id);
                         continue;
                     }
                     if !self.states.contains_key(&args.target_id) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, WAIT_FAILURE as u64);
+                        machine.machine().set_register(A0, WAIT_FAILURE as u64);
                         continue;
                     }
                     // Return code will be updated when the joining VM exits
@@ -358,7 +371,7 @@ where
                 Message::Pipe(vm_id, args) => {
                     if self.fds.len() as u64 >= MAX_FDS {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, MAX_FDS_CREATED as u64);
+                        machine.machine().set_register(A0, MAX_FDS_CREATED as u64);
                         continue;
                     }
                     let (p1, p2, slot) = Fd::create(self.next_fd_slot);
@@ -367,24 +380,24 @@ where
                     self.fds.insert(p2, vm_id);
                     let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
                     machine
-                        .machine
+                        .machine()
                         .memory_mut()
                         .store64(&args.fd1_addr, &p1.0)?;
                     machine
-                        .machine
+                        .machine()
                         .memory_mut()
                         .store64(&args.fd2_addr, &p2.0)?;
-                    machine.machine.set_register(A0, SUCCESS as u64);
+                    machine.machine().set_register(A0, SUCCESS as u64);
                 }
                 Message::FdRead(vm_id, args) => {
                     if !(self.fds.contains_key(&args.fd) && (self.fds[&args.fd] == vm_id)) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, INVALID_FD as u64);
+                        machine.machine().set_register(A0, INVALID_FD as u64);
                         continue;
                     }
                     if !self.fds.contains_key(&args.fd.other_fd()) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, OTHER_END_CLOSED as u64);
+                        machine.machine().set_register(A0, OTHER_END_CLOSED as u64);
                         continue;
                     }
                     // Return code will be updated when the read operation finishes
@@ -401,12 +414,12 @@ where
                 Message::FdWrite(vm_id, args) => {
                     if !(self.fds.contains_key(&args.fd) && (self.fds[&args.fd] == vm_id)) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, INVALID_FD as u64);
+                        machine.machine().set_register(A0, INVALID_FD as u64);
                         continue;
                     }
                     if !self.fds.contains_key(&args.fd.other_fd()) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, OTHER_END_CLOSED as u64);
+                        machine.machine().set_register(A0, OTHER_END_CLOSED as u64);
                         continue;
                     }
                     // Return code will be updated when the write operation finishes
@@ -430,7 +443,7 @@ where
                         ..
                     } = args;
                     let full_length = machine
-                        .machine
+                        .machine()
                         .inner_mut()
                         .memory_mut()
                         .load64(&length_addr)?;
@@ -440,26 +453,26 @@ where
                         let fd = inherited_fd[i as usize].0;
                         let addr = buffer_addr.checked_add(i * 8).ok_or(Error::MemOutOfBound)?;
                         machine
-                            .machine
+                            .machine()
                             .inner_mut()
                             .memory_mut()
                             .store64(&addr, &fd)?;
                     }
                     machine
-                        .machine
+                        .machine()
                         .inner_mut()
                         .memory_mut()
                         .store64(&length_addr, &real_length)?;
-                    machine.machine.set_register(A0, SUCCESS as u64);
+                    machine.machine().set_register(A0, SUCCESS as u64);
                 }
                 Message::Close(vm_id, fd) => {
                     if self.fds.get(&fd) != Some(&vm_id) {
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, INVALID_FD as u64);
+                        machine.machine().set_register(A0, INVALID_FD as u64);
                     } else {
                         self.fds.remove(&fd);
                         let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                        machine.machine.set_register(A0, SUCCESS as u64);
+                        machine.machine().set_register(A0, SUCCESS as u64);
                     }
                 }
             }
@@ -496,8 +509,8 @@ where
             match self.states[&vm_id].clone() {
                 VmState::WaitForRead(ReadState { length_addr, .. }) => {
                     let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
-                    machine.machine.memory_mut().store64(&length_addr, &0)?;
-                    machine.machine.set_register(A0, SUCCESS as u64);
+                    machine.machine().memory_mut().store64(&length_addr, &0)?;
+                    machine.machine().set_register(A0, SUCCESS as u64);
                     self.states.insert(vm_id, VmState::Runnable);
                 }
                 VmState::WaitForWrite(WriteState {
@@ -507,10 +520,10 @@ where
                 }) => {
                     let (_, machine) = self.ensure_get_instantiated(&vm_id)?;
                     machine
-                        .machine
+                        .machine()
                         .memory_mut()
                         .store64(&length_addr, &consumed)?;
-                    machine.machine.set_register(A0, SUCCESS as u64);
+                    machine.machine().set_register(A0, SUCCESS as u64);
                     self.states.insert(vm_id, VmState::Runnable);
                 }
                 _ => (),
@@ -544,10 +557,10 @@ where
                     .get_mut(&write_vm_id)
                     .ok_or_else(|| Error::Unexpected("Unable to find VM Id".to_string()))?;
                 write_machine
-                    .machine
+                    .machine()
                     .add_cycles_no_checking(transferred_byte_cycles(copiable))?;
                 let data = write_machine
-                    .machine
+                    .machine()
                     .memory_mut()
                     .load_bytes(write_buffer_addr.wrapping_add(consumed), copiable)?;
                 let (_, read_machine) = self
@@ -555,18 +568,18 @@ where
                     .get_mut(&read_vm_id)
                     .ok_or_else(|| Error::Unexpected("Unable to find VM Id".to_string()))?;
                 read_machine
-                    .machine
+                    .machine()
                     .add_cycles_no_checking(transferred_byte_cycles(copiable))?;
                 read_machine
-                    .machine
+                    .machine()
                     .memory_mut()
                     .store_bytes(read_buffer_addr, &data)?;
                 // Read syscall terminates as soon as some data are filled
                 read_machine
-                    .machine
+                    .machine()
                     .memory_mut()
                     .store64(&read_length_addr, &copiable)?;
-                read_machine.machine.set_register(A0, SUCCESS as u64);
+                read_machine.machine().set_register(A0, SUCCESS as u64);
                 self.states.insert(read_vm_id, VmState::Runnable);
 
                 // Write syscall, however, terminates only when all the data
@@ -579,10 +592,10 @@ where
                         .get_mut(&write_vm_id)
                         .ok_or_else(|| Error::Unexpected("Unable to find VM Id".to_string()))?;
                     write_machine
-                        .machine
+                        .machine()
                         .memory_mut()
                         .store64(&write_length_addr, &write_length)?;
-                    write_machine.machine.set_register(A0, SUCCESS as u64);
+                    write_machine.machine().set_register(A0, SUCCESS as u64);
                     self.states.insert(write_vm_id, VmState::Runnable);
                 } else {
                     // Only update write VM state
@@ -647,7 +660,7 @@ where
     fn ensure_get_instantiated(
         &mut self,
         id: &VmId,
-    ) -> Result<&mut (MachineContext<DL>, Machine), Error> {
+    ) -> Result<&mut (MachineContext<DL>, CM), Error> {
         self.ensure_vms_instantiated(&[*id])?;
         self.instantiated
             .get_mut(id)
@@ -667,7 +680,7 @@ where
         let (context, mut machine) = self.create_dummy_vm(id)?;
         {
             let mut sc = context.snapshot2_context().lock().expect("lock");
-            sc.resume(&mut machine.machine, snapshot)?;
+            sc.resume(machine.machine(), snapshot)?;
         }
         self.instantiated.insert(*id, (context, machine));
         self.suspended.remove(id);
@@ -692,7 +705,7 @@ where
             .ok_or_else(|| Error::Unexpected("Unable to find VM Id".to_string()))?;
         let snapshot = {
             let sc = context.snapshot2_context().lock().expect("lock");
-            sc.make_snapshot(&mut machine.machine)?
+            sc.make_snapshot(machine.machine())?
         };
         self.suspended.insert(*id, snapshot);
         self.instantiated.remove(id);
@@ -723,11 +736,11 @@ where
         {
             let mut sc = context.snapshot2_context().lock().expect("lock");
             let (program, _) = sc.load_data(data_piece_id, offset, length)?;
-            let metadata = parse_elf::<u64>(&program, machine.machine.version())?;
+            let metadata = parse_elf::<u64>(&program, machine.machine().version())?;
             let bytes = machine.load_program_with_metadata(&program, &metadata, args)?;
-            sc.mark_program(&mut machine.machine, &metadata, data_piece_id, offset)?;
+            sc.mark_program(machine.machine(), &metadata, data_piece_id, offset)?;
             machine
-                .machine
+                .machine()
                 .add_cycles_no_checking(transferred_byte_cycles(bytes))?;
         }
         self.instantiated.insert(id, (context, machine));
@@ -737,12 +750,12 @@ where
     }
 
     // Create a new VM instance with syscalls attached
-    fn create_dummy_vm(&self, id: &VmId) -> Result<(MachineContext<DL>, Machine), Error> {
+    fn create_dummy_vm(&self, id: &VmId) -> Result<(MachineContext<DL>, CM), Error> {
         // The code here looks slightly weird, since I don't want to copy over all syscall
         // impls here again. Ideally, this scheduler package should be merged with ckb-script,
         // or simply replace ckb-script. That way, the quirks here will be eliminated.
         let version = self.script_version;
-        let core_machine = CoreMachineType::new(
+        let core_machine = <TCore as CoreMachine>::new(
             version.vm_isa(),
             version.vm_version(),
             // We will update max_cycles for each machine when it gets a chance to run
@@ -766,6 +779,6 @@ where
             .into_iter()
             .fold(machine_builder, |builder, syscall| builder.syscall(syscall));
         let default_machine = machine_builder.build();
-        Ok((machine_context, Machine::new(default_machine)))
+        Ok((machine_context, CM::new(default_machine)))
     }
 }

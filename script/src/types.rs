@@ -25,7 +25,7 @@ use ckb_vm::{
     bytes::Bytes,
     machine::Pause,
     snapshot2::{DataSource, Snapshot2},
-    RISCV_GENERAL_REGISTER_NUMBER,
+    CoreMachine as TCoreMachine, RISCV_GENERAL_REGISTER_NUMBER,
 };
 use std::mem::size_of;
 

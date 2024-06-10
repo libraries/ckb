@@ -2,7 +2,10 @@ use crate::scheduler::Scheduler;
 #[cfg(test)]
 use crate::syscalls::Pause;
 use crate::syscalls::{InheritedFd, ProcessID};
-use crate::types::{DataPieceId, FullSuspendedState, Message, RunMode, TxData, VmId, FIRST_VM_ID};
+use crate::types::{
+    CoreMachineType, DataPieceId, FullSuspendedState, Machine, Message, RunMode, TxData, VmId,
+    FIRST_VM_ID,
+};
 use crate::{
     error::{ScriptError, TransactionScriptError},
     syscalls::{
@@ -33,7 +36,10 @@ use ckb_types::{
     prelude::*,
 };
 use ckb_vm::machine::Pause as VMPause;
-use ckb_vm::{snapshot2::Snapshot2Context, Error as VMInternalError, Syscalls};
+use ckb_vm::{
+    snapshot2::Snapshot2Context, CoreMachine as TCoreMachine, Error as VMInternalError, Syscalls,
+};
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -139,9 +145,10 @@ impl Binaries {
 ///
 /// TransactionScriptsSyscallsGenerator can be cloned.
 #[derive(Clone)]
-pub struct TransactionScriptsSyscallsGenerator<DL>
+pub struct TransactionScriptsSyscallsGenerator<DL, TCore>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: TCoreMachine + Send + Sync + Clone,
 {
     pub(crate) base_cycles: Arc<Mutex<u64>>,
     pub(crate) data_loader: DL,
@@ -152,11 +159,13 @@ where
     #[cfg(test)]
     pub(crate) skip_pause: Arc<AtomicBool>,
     pub(crate) vm_id: VmId,
+    _phamtom: PhantomData<TCore>,
 }
 
-impl<DL> TransactionScriptsSyscallsGenerator<DL>
+impl<DL, TCore> TransactionScriptsSyscallsGenerator<DL, TCore>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: TCoreMachine + Send + Sync + Clone,
 {
     /// Build syscall: current_cycles
     pub fn build_current_cycles(&self) -> CurrentCycles {
@@ -290,11 +299,11 @@ where
         script_version: ScriptVersion,
         script_group: &ScriptGroup,
         snapshot2_context: Arc<Mutex<Snapshot2Context<DataPieceId, TxData<DL>>>>,
-    ) -> Vec<Box<(dyn Syscalls<CoreMachine>)>> {
+    ) -> Vec<Box<(dyn Syscalls<TCore>)>> {
         let current_script_hash = script_group.script.calc_script_hash();
         let script_group_input_indices = Arc::new(script_group.input_indices.clone());
         let script_group_output_indices = Arc::new(script_group.output_indices.clone());
-        let mut syscalls: Vec<Box<(dyn Syscalls<CoreMachine>)>> = vec![
+        let mut syscalls: Vec<Box<(dyn Syscalls<TCore>)>> = vec![
             Box::new(self.build_load_script_hash(current_script_hash.clone())),
             Box::new(self.build_load_tx()),
             Box::new(self.build_load_cell(
@@ -347,9 +356,10 @@ where
 ///
 /// FlatBufferBuilder owned `Vec<u8>` that grows as needed, in the
 /// future, we might refactor this to share buffer to achieve zero-copy
-pub struct TransactionScriptsVerifier<DL>
+pub struct TransactionScriptsVerifier<DL, TCore>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: TCoreMachine + Send + Sync + Clone,
 {
     data_loader: DL,
 
@@ -367,12 +377,13 @@ where
     consensus: Arc<Consensus>,
     tx_env: Arc<TxVerifyEnv>,
 
-    syscalls_generator: TransactionScriptsSyscallsGenerator<DL>,
+    syscalls_generator: TransactionScriptsSyscallsGenerator<DL, TCore>,
 }
 
-impl<DL> TransactionScriptsVerifier<DL>
+impl<DL, TCore> TransactionScriptsVerifier<DL, TCore>
 where
     DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+    TCore: TCoreMachine + Send + Sync + Clone,
 {
     /// Creates a script verifier for the transaction.
     ///
@@ -385,7 +396,7 @@ where
         data_loader: DL,
         consensus: Arc<Consensus>,
         tx_env: Arc<TxVerifyEnv>,
-    ) -> TransactionScriptsVerifier<DL> {
+    ) -> TransactionScriptsVerifier<DL, TCore> {
         let tx_hash = rtx.transaction.hash();
         let resolved_cell_deps = &rtx.resolved_cell_deps;
         let resolved_inputs = &rtx.resolved_inputs;
@@ -474,6 +485,7 @@ where
             #[cfg(test)]
             skip_pause: Arc::clone(&skip_pause),
             vm_id: FIRST_VM_ID,
+            _phamtom: PhantomData::default(),
         };
 
         TransactionScriptsVerifier {
@@ -1022,7 +1034,7 @@ where
         };
         let version = self.select_version(&script_group.script)?;
         let mut scheduler = if let Some(state) = state {
-            Scheduler::resume(
+            Scheduler::<_, CoreMachine, Machine>::resume(
                 tx_data,
                 version,
                 self.syscalls_generator.clone(),
@@ -1120,7 +1132,11 @@ where
             script_group: Arc::new(script_group.clone()),
         };
         let version = self.select_version(&script_group.script)?;
-        let mut scheduler = Scheduler::new(tx_data, version, self.syscalls_generator.clone());
+        let mut scheduler = Scheduler::<_, CoreMachine, Machine>::new(
+            tx_data,
+            version,
+            self.syscalls_generator.clone(),
+        );
         let map_vm_internal_error = |error: VMInternalError| match error {
             VMInternalError::CyclesExceeded => ScriptError::ExceededMaximumCycles(max_cycles),
             _ => ScriptError::VMInternalError(error),
@@ -1154,7 +1170,11 @@ where
             script_group: Arc::new(script_group.clone()),
         };
         let version = self.select_version(&script_group.script)?;
-        let mut scheduler = Scheduler::new(tx_data, version, self.syscalls_generator.clone());
+        let mut scheduler = Scheduler::<_, CoreMachine, CoreMachine, Machine>::new(
+            tx_data,
+            version,
+            self.syscalls_generator.clone(),
+        );
         let map_vm_internal_error = |error: VMInternalError| match error {
             VMInternalError::CyclesExceeded => ScriptError::ExceededMaximumCycles(max_cycles),
             _ => ScriptError::VMInternalError(error),
