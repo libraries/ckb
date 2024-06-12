@@ -15,7 +15,13 @@ use std::sync::{Arc, Mutex};
 use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
 
 #[cfg(not(has_asm))]
-use ckb_vm::{DefaultCoreMachine, TraceMachine, WXorXMemory};
+use ckb_vm::{DefaultCoreMachine, WXorXMemory};
+
+#[cfg(all(not(has_asm), not(feature = "pprof")))]
+use ckb_vm::TraceMachine;
+
+#[cfg(all(not(has_asm), feature = "pprof"))]
+use ckb_vm::machine::pprof::PProfMachine;
 
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_vm::snapshot2::Snapshot2Context;
@@ -52,8 +58,10 @@ pub type CoreMachine = DefaultCoreMachine<u64, WXorXMemory<ckb_vm::FlatMemory<u6
 
 #[cfg(has_asm)]
 pub(crate) type Machine = AsmMachine;
-#[cfg(not(has_asm))]
+#[cfg(all(not(has_asm), not(feature = "pprof")))]
 pub(crate) type Machine = TraceMachine<CoreMachine>;
+#[cfg(all(not(has_asm), feature = "pprof"))]
+pub(crate) type Machine = PProfMachine<CoreMachine>;
 
 pub(crate) type Indices = Arc<Vec<usize>>;
 
