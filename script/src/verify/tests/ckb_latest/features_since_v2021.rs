@@ -1788,3 +1788,33 @@ fn check_signature_referenced_via_type_hash_ok_with_multiple_matches() {
     let result = verifier.verify_without_limit(script_version, &rtx);
     assert_eq!(result.unwrap(), 539);
 }
+
+#[test]
+fn check_crash() {
+    let script_version = SCRIPT_VERSION;
+
+    let (exec_caller_cell, exec_caller_data_hash) = load_cell_from_path("/tmp/crash-45a6098d90688644a0de84df9b949f6a2d2a977e");
+    let exec_caller_script = Script::new_builder()
+        .hash_type(script_version.data_hash_type().into())
+        .code_hash(exec_caller_data_hash)
+        .build();
+    let output = CellOutputBuilder::default()
+        .capacity(capacity_bytes!(100).pack())
+        .lock(exec_caller_script)
+        .build();
+    let input = CellInput::new(OutPoint::null(), 0);
+
+    let transaction = TransactionBuilder::default().input(input).build();
+    let dummy_cell = create_dummy_cell(output);
+
+    let rtx = ResolvedTransaction {
+        transaction,
+        resolved_cell_deps: vec![exec_caller_cell],
+        resolved_inputs: vec![dummy_cell],
+        resolved_dep_groups: vec![],
+    };
+
+    let verifier = TransactionScriptsVerifierWithEnv::new();
+    let result = verifier.verify(script_version, &rtx, 70000000);
+    println!("{:?}", result);
+}
