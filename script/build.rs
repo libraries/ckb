@@ -16,8 +16,8 @@ fn main() {
         panic!("ASM feature is not available for target {target_arch} on {target_family}!");
     }
 
-    if cfg!(any(feature = "asm", feature = "detect-asm")) && can_enable_asm {
-        println!("cargo:rustc-cfg=has_asm");
-    }
+    // if cfg!(any(feature = "asm", feature = "detect-asm")) && can_enable_asm {
+    //     println!("cargo:rustc-cfg=has_asm");
+    // }
     println!("cargo:rerun-if-changed=src");
 }

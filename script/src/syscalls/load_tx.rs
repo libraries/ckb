@@ -30,7 +30,12 @@ impl<Mac: SupportMachine> Syscalls<Mac> for LoadTx {
     fn ecall(&mut self, machine: &mut Mac) -> Result<bool, VMError> {
         let wrote_size = match machine.registers()[A7].to_u64() {
             LOAD_TX_HASH_SYSCALL_NUMBER => {
-                store_data(machine, self.rtx.transaction.hash().as_slice())?
+                // println!("{:x}", machine.pc().to_u64());
+                // println!("{:?}", mem_checksum(machine.memory_mut()));
+                // println!("{:x}", self.rtx.transaction.hash());
+                let r = store_data(machine, self.rtx.transaction.hash().as_slice())?;
+                // println!("{:?}", mem_checksum(machine.memory_mut()));
+                r
             }
             LOAD_TRANSACTION_SYSCALL_NUMBER => {
                 store_data(machine, self.rtx.transaction.data().as_slice())?
@@ -42,4 +47,13 @@ impl<Mac: SupportMachine> Syscalls<Mac> for LoadTx {
         machine.set_register(A0, Mac::REG::from_u8(SUCCESS));
         Ok(true)
     }
+}
+
+use ckb_vm::Memory;
+fn mem_checksum<T: Memory>(m: &mut T) -> u8 {
+    let mut s = 0u8;
+    for i in m.load_bytes(0, 4 * 1024 * 1024).unwrap().to_vec() {
+        s = s.wrapping_add(i);
+    }
+    return s;
 }
