@@ -1793,7 +1793,7 @@ fn check_signature_referenced_via_type_hash_ok_with_multiple_matches() {
 fn check_crash() {
     let script_version = SCRIPT_VERSION;
 
-    let (exec_caller_cell, exec_caller_data_hash) = load_cell_from_path("/tmp/crash-45a6098d90688644a0de84df9b949f6a2d2a977e");
+    let (exec_caller_cell, exec_caller_data_hash) = load_cell_from_path("/tmp/crash-4717eb0e0cb48555182c63c6d21c28e330df008d");
     let exec_caller_script = Script::new_builder()
         .hash_type(script_version.data_hash_type().into())
         .code_hash(exec_caller_data_hash)
