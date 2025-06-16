@@ -196,6 +196,26 @@ impl fmt::Display for ScriptGroupType {
     }
 }
 
+impl std::str::FromStr for ScriptGroupType {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "lock" => Ok(ScriptGroupType::Lock),
+            "type" => Ok(ScriptGroupType::Type),
+            _ => Err("unknown script group type"),
+        }
+    }
+}
+
+impl TryFrom<&str> for ScriptGroupType {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        s.parse()
+    }
+}
+
 /// Struct specifies which script has verified so far.
 /// State is lifetime free, but capture snapshot need heavy memory copy
 #[derive(Clone)]
