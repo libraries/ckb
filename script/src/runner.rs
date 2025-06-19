@@ -14,10 +14,67 @@ use ckb_types::core::{
 };
 use ckb_types::packed::Byte32;
 use ckb_types::prelude::Pack;
-use ckb_vm::DefaultMachineRunner;
+use ckb_vm::decoder::{Decoder, build_decoder};
+use ckb_vm::{CoreMachine, DefaultMachine, DefaultMachineRunner, SupportMachine};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Arc;
+
+pub trait Hook<M>
+where
+    M: DefaultMachineRunner,
+{
+    fn init(machine: &DefaultMachine<M::Inner>) -> Self;
+    fn init_by_exec(&mut self, _: &M);
+    fn step(&mut self, decoder: &mut Decoder, m: &mut M) -> Result<(), ckb_vm::Error>;
+}
+
+pub struct HookWraper<M, H>
+where
+    M: DefaultMachineRunner,
+    H: Hook<M>,
+{
+    machine: M,
+    hook: H,
+}
+
+impl<M, H> DefaultMachineRunner for HookWraper<M, H>
+where
+    M: DefaultMachineRunner,
+    H: Hook<M>,
+{
+    type Inner = M::Inner;
+
+    fn new(machine: DefaultMachine<Self::Inner>) -> Self {
+        let hook = H::init(&machine);
+        Self {
+            machine: M::new(machine),
+            hook,
+        }
+    }
+
+    fn machine(&self) -> &DefaultMachine<Self::Inner> {
+        self.machine.machine()
+    }
+
+    fn machine_mut(&mut self) -> &mut DefaultMachine<Self::Inner> {
+        self.machine.machine_mut()
+    }
+
+    fn run(&mut self) -> Result<i8, ckb_vm::Error> {
+        let mut decoder = build_decoder::<u64>(self.machine().isa(), self.machine().version());
+        self.machine_mut().set_running(true);
+        while self.machine().running() {
+            if self.machine_mut().reset_signal() {
+                decoder.reset_instructions_cache();
+                self.hook.init_by_exec(&mut self.machine);
+            }
+            self.hook.step(&mut decoder, &mut self.machine)?;
+            self.machine_mut().step(&mut decoder)?;
+        }
+        Ok(self.machine().exit_code())
+    }
+}
 
 pub struct Config<DL, V, M>
 where
