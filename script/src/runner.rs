@@ -1,7 +1,7 @@
 use crate::types::{DebugPrinter, Machine, SyscallGenerator};
 use crate::{
-    ScriptError, ScriptGroupType, ScriptVersion, TransactionScriptsVerifier, TxVerifyEnv,
-    generate_ckb_syscalls,
+    Scheduler, ScriptError, ScriptGroupType, ScriptVersion, TransactionScriptsVerifier,
+    TxVerifyEnv, generate_ckb_syscalls,
 };
 use ckb_chain_spec::consensus::ConsensusBuilder;
 use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
@@ -34,8 +34,8 @@ where
     M: DefaultMachineRunner,
     H: Hook<M>,
 {
-    machine: M,
-    hook: H,
+    pub machine: M,
+    pub hook: H,
 }
 
 impl<M, H> DefaultMachineRunner for HookWraper<M, H>
@@ -137,9 +137,9 @@ where
     V: Clone,
     M: DefaultMachineRunner,
 {
-    option: Config<DL, V, M>,
-    rtx: ResolvedTransaction,
-    verifier: TransactionScriptsVerifier<DL, V, M>,
+    pub config: Config<DL, V, M>,
+    pub rtx: ResolvedTransaction,
+    pub verifier: TransactionScriptsVerifier<DL, V, M>,
 }
 
 impl<DL, V, M> Runner<DL, V, M>
@@ -159,7 +159,7 @@ where
     pub fn new(
         tx: TransactionView,
         data_loader: DL,
-        option: Config<DL, V, M>,
+        config: Config<DL, V, M>,
     ) -> Result<Self, ckb_error::Error> {
         let rtx = resolve_transaction(tx, &mut HashSet::new(), &data_loader, &data_loader)?;
         let hardforks = HardForks {
@@ -179,7 +179,7 @@ where
                 .hardfork_switch(hardforks)
                 .build(),
         );
-        let epoch = match option.version {
+        let epoch = match config.version {
             ScriptVersion::V0 => ckb_types::core::EpochNumberWithFraction::new(15, 0, 1),
             ScriptVersion::V1 => ckb_types::core::EpochNumberWithFraction::new(25, 0, 1),
             ScriptVersion::V2 => ckb_types::core::EpochNumberWithFraction::new(35, 0, 1),
@@ -193,45 +193,22 @@ where
             data_loader.clone(),
             consensus.clone(),
             tx_env.clone(),
-            option.syscall_generator,
-            option.syscall_context.clone(),
+            config.syscall_generator,
+            config.syscall_context.clone(),
         );
         Ok(Self {
-            option,
+            config,
             rtx,
             verifier,
         })
     }
 
-    pub fn verify(&self, by: VerifyBy) -> Result<Cycle, ScriptError> {
-        match by {
-            VerifyBy::Hash {
-                script_group_type,
-                script_hash,
-            } => self.verify_by_hash(script_group_type, &script_hash),
-            VerifyBy::Location {
-                cell_type,
-                cell_index,
-                script_group_type,
-            } => self.verify_by_location(cell_type, cell_index, script_group_type),
-        }
-    }
-
-    pub fn verify_by_hash(
-        &self,
-        script_group_type: ScriptGroupType,
-        script_hash: &Byte32,
-    ) -> Result<Cycle, ScriptError> {
-        self.verifier
-            .verify_single(script_group_type, script_hash, self.option.max_cycles)
-    }
-
-    pub fn verify_by_location(
+    pub fn get_script_hash_by_location(
         &self,
         cell_type: CellType,
         cell_index: usize,
         script_group_type: ScriptGroupType,
-    ) -> Result<Cycle, ScriptError> {
+    ) -> Result<Byte32, ScriptError> {
         let script_hash = match (&script_group_type, cell_type) {
             (ScriptGroupType::Lock, CellType::Input) => self
                 .rtx
@@ -264,6 +241,81 @@ where
                 script_group_type, cell_type, cell_index
             ),
         };
+        Ok(script_hash)
+    }
+
+    pub fn get_scheduler(&self, by: VerifyBy) -> Result<Scheduler<DL, V, M>, ScriptError> {
+        match by {
+            VerifyBy::Hash {
+                script_group_type,
+                script_hash,
+            } => self.get_scheduler_by_hash(script_group_type, &script_hash),
+            VerifyBy::Location {
+                cell_type,
+                cell_index,
+                script_group_type,
+            } => self.get_scheduler_by_location(cell_type, cell_index, script_group_type),
+        }
+    }
+
+    pub fn get_scheduler_by_hash(
+        &self,
+        script_group_type: ScriptGroupType,
+        script_hash: &Byte32,
+    ) -> Result<Scheduler<DL, V, M>, ScriptError> {
+        let script_group = self
+            .verifier
+            .find_script_group(script_group_type, &script_hash)
+            .unwrap();
+        self.verifier.create_scheduler(script_group)
+    }
+
+    pub fn get_scheduler_by_location(
+        &self,
+        cell_type: CellType,
+        cell_index: usize,
+        script_group_type: ScriptGroupType,
+    ) -> Result<Scheduler<DL, V, M>, ScriptError> {
+        let script_hash =
+            self.get_script_hash_by_location(cell_type, cell_index, script_group_type)?;
+        let script_group = self
+            .verifier
+            .find_script_group(script_group_type, &script_hash)
+            .unwrap();
+        self.verifier.create_scheduler(script_group)
+    }
+
+    pub fn verify(&self, by: VerifyBy) -> Result<Cycle, ScriptError> {
+        match by {
+            VerifyBy::Hash {
+                script_group_type,
+                script_hash,
+            } => self.verify_by_hash(script_group_type, &script_hash),
+            VerifyBy::Location {
+                cell_type,
+                cell_index,
+                script_group_type,
+            } => self.verify_by_location(cell_type, cell_index, script_group_type),
+        }
+    }
+
+    pub fn verify_by_hash(
+        &self,
+        script_group_type: ScriptGroupType,
+        script_hash: &Byte32,
+    ) -> Result<Cycle, ScriptError> {
+        self.verifier
+            .verify_single(script_group_type, script_hash, self.config.max_cycles)
+    }
+
+    pub fn verify_by_location(
+        &self,
+        cell_type: CellType,
+        cell_index: usize,
+        script_group_type: ScriptGroupType,
+    ) -> Result<Cycle, ScriptError> {
+        let script_hash =
+            self.get_script_hash_by_location(cell_type, cell_index, script_group_type)?;
         self.verify_by_hash(script_group_type, &script_hash)
     }
 }
@@ -316,3 +368,60 @@ pub enum VerifyBy {
         script_group_type: ScriptGroupType,
     },
 }
+
+// pub struct SchedulerIterater<DL, V, M>
+// where
+//     DL: CellDataProvider
+//         + CellProvider
+//         + HeaderChecker
+//         + HeaderProvider
+//         + ExtensionProvider
+//         + Send
+//         + Sync
+//         + Clone
+//         + 'static,
+//     V: Clone,
+//     M: DefaultMachineRunner,
+// {
+//     scheduler: Scheduler<DL, V, M>,
+// }
+
+// impl<DL, V, M> Iterator for SchedulerIterater<DL, V, M>
+// where
+//     DL: CellDataProvider
+//         + CellProvider
+//         + HeaderChecker
+//         + HeaderProvider
+//         + ExtensionProvider
+//         + Send
+//         + Sync
+//         + Clone
+//         + 'static,
+//     V: Clone,
+//     M: DefaultMachineRunner,
+// {
+//     type Item = (VmId, M);
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if self.scheduler.terminated() {
+//             return None;
+//         }
+//         let result = self.scheduler.iterate();
+//         let vm_id = result.unwrap().executed_vm;
+//         let r2 = self
+//             .scheduler
+//             .peek(
+//                 &result.unwrap().executed_vm,
+//                 |&mut m| -> Result<M, ckb_vm::Error> { Ok(m) },
+//                 |&_, &_| unimplemented!(),
+//             )
+//             .unwrap();
+//         Some((vm_id, r2))
+
+//         // if self.count < 6 {
+//         //     Some(self.count)
+//         // } else {
+//         //     None
+//         // }
+//     }
+// }
