@@ -15,18 +15,28 @@ use ckb_types::core::{
 use ckb_types::packed::Byte32;
 use ckb_types::prelude::Pack;
 use ckb_vm::decoder::{Decoder, build_decoder};
-use ckb_vm::{CoreMachine, DefaultMachine, DefaultMachineRunner, SupportMachine};
+use ckb_vm::elf::ProgramMetadata;
+use ckb_vm::{
+    Bytes, CoreMachine, DefaultMachine, DefaultMachineRunner, Error as VmError, SupportMachine,
+};
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::HashSet;
+use std::rc::Rc;
 use std::sync::Arc;
 
 pub trait Hook<M>
 where
     M: DefaultMachineRunner,
 {
-    fn init(machine: &DefaultMachine<M::Inner>) -> Self;
-    fn init_by_exec(&mut self, _: &M);
-    fn step(&mut self, decoder: &mut Decoder, m: &mut M) -> Result<(), ckb_vm::Error>;
+    fn init(machine: &M) -> Self;
+    fn init_by_exec(&mut self, machine: &M);
+    fn load_program(
+        &mut self,
+        program: &Bytes,
+        args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
+    );
+    fn step(&mut self, decoder: &mut Decoder, machine: &mut M) -> Result<(), VmError>;
 }
 
 pub struct HookWraper<M, H>
@@ -35,7 +45,7 @@ where
     H: Hook<M>,
 {
     pub machine: M,
-    pub hook: H,
+    pub hook: Rc<RefCell<H>>,
 }
 
 impl<M, H> DefaultMachineRunner for HookWraper<M, H>
@@ -46,11 +56,9 @@ where
     type Inner = M::Inner;
 
     fn new(machine: DefaultMachine<Self::Inner>) -> Self {
-        let hook = H::init(&machine);
-        Self {
-            machine: M::new(machine),
-            hook,
-        }
+        let machine = M::new(machine);
+        let hook = Rc::new(RefCell::new(H::init(&machine)));
+        Self { machine, hook }
     }
 
     fn machine(&self) -> &DefaultMachine<Self::Inner> {
@@ -67,12 +75,40 @@ where
         while self.machine().running() {
             if self.machine_mut().reset_signal() {
                 decoder.reset_instructions_cache();
-                self.hook.init_by_exec(&mut self.machine);
+                self.hook.borrow_mut().init_by_exec(&mut self.machine);
             }
-            self.hook.step(&mut decoder, &mut self.machine)?;
+            self.hook
+                .borrow_mut()
+                .step(&mut decoder, &mut self.machine)?;
             self.machine_mut().step(&mut decoder)?;
         }
         Ok(self.machine().exit_code())
+    }
+
+    fn load_program(
+        &mut self,
+        program: &Bytes,
+        args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
+    ) -> Result<u64, VmError> {
+        let args: Vec<Result<Bytes, VmError>> = args.collect();
+        self.hook
+            .borrow_mut()
+            .load_program(program, args.clone().into_iter());
+        self.machine_mut().load_program(program, args.into_iter())
+    }
+
+    fn load_program_with_metadata(
+        &mut self,
+        program: &Bytes,
+        metadata: &ProgramMetadata,
+        args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
+    ) -> Result<u64, VmError> {
+        let args: Vec<Result<Bytes, VmError>> = args.collect();
+        self.hook
+            .borrow_mut()
+            .load_program(program, args.clone().into_iter());
+        self.machine_mut()
+            .load_program_with_metadata(program, metadata, args.into_iter())
     }
 }
 
@@ -368,60 +404,3 @@ pub enum VerifyBy {
         script_group_type: ScriptGroupType,
     },
 }
-
-// pub struct SchedulerIterater<DL, V, M>
-// where
-//     DL: CellDataProvider
-//         + CellProvider
-//         + HeaderChecker
-//         + HeaderProvider
-//         + ExtensionProvider
-//         + Send
-//         + Sync
-//         + Clone
-//         + 'static,
-//     V: Clone,
-//     M: DefaultMachineRunner,
-// {
-//     scheduler: Scheduler<DL, V, M>,
-// }
-
-// impl<DL, V, M> Iterator for SchedulerIterater<DL, V, M>
-// where
-//     DL: CellDataProvider
-//         + CellProvider
-//         + HeaderChecker
-//         + HeaderProvider
-//         + ExtensionProvider
-//         + Send
-//         + Sync
-//         + Clone
-//         + 'static,
-//     V: Clone,
-//     M: DefaultMachineRunner,
-// {
-//     type Item = (VmId, M);
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.scheduler.terminated() {
-//             return None;
-//         }
-//         let result = self.scheduler.iterate();
-//         let vm_id = result.unwrap().executed_vm;
-//         let r2 = self
-//             .scheduler
-//             .peek(
-//                 &result.unwrap().executed_vm,
-//                 |&mut m| -> Result<M, ckb_vm::Error> { Ok(m) },
-//                 |&_, &_| unimplemented!(),
-//             )
-//             .unwrap();
-//         Some((vm_id, r2))
-
-//         // if self.count < 6 {
-//         //     Some(self.count)
-//         // } else {
-//         //     None
-//         // }
-//     }
-// }
