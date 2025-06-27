@@ -31,10 +31,11 @@ where
     fn init_by_exec(&mut self, machine: &M);
     fn load_program(
         &mut self,
+        machine: &M,
         program: &Bytes,
         args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
     );
-    fn step(&mut self, decoder: &mut Decoder, machine: &mut M) -> Result<(), VmError>;
+    fn step(&mut self, machine: &mut M, decoder: &mut Decoder) -> Result<(), VmError>;
 }
 
 pub struct HookWraper<M, H>
@@ -78,7 +79,7 @@ where
             self.hook
                 .lock()
                 .unwrap()
-                .step(&mut decoder, &mut self.machine)?;
+                .step(&mut self.machine, &mut decoder)?;
             self.machine_mut().step(&mut decoder)?;
         }
         Ok(self.machine().exit_code())
@@ -90,10 +91,11 @@ where
         args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
     ) -> Result<u64, VmError> {
         let args: Vec<Result<Bytes, VmError>> = args.collect();
-        self.hook
-            .lock()
-            .unwrap()
-            .load_program(program, args.clone().into_iter());
+        self.hook.lock().unwrap().load_program(
+            &mut self.machine,
+            program,
+            args.clone().into_iter(),
+        );
         self.machine_mut().load_program(program, args.into_iter())
     }
 
@@ -104,10 +106,11 @@ where
         args: impl ExactSizeIterator<Item = Result<Bytes, VmError>>,
     ) -> Result<u64, VmError> {
         let args: Vec<Result<Bytes, VmError>> = args.collect();
-        self.hook
-            .lock()
-            .unwrap()
-            .load_program(program, args.clone().into_iter());
+        self.hook.lock().unwrap().load_program(
+            &mut self.machine,
+            program,
+            args.clone().into_iter(),
+        );
         self.machine_mut()
             .load_program_with_metadata(program, metadata, args.into_iter())
     }

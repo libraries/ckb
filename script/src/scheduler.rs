@@ -979,7 +979,7 @@ where
         Ok(())
     }
 
-    fn boot_root_vm_if_needed(&mut self) -> Result<(), Error> {
+    pub fn boot_root_vm_if_needed(&mut self) -> Result<(), Error> {
         if self.states.is_empty() {
             // Booting phase, we will need to initialize the first VM.
             let program_id = self.sg_data.sg_info.program_data_piece_id.clone();
