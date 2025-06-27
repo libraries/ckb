@@ -326,7 +326,7 @@ where
     }
 
     /// Returns the machine that needs to be executed in the current iterate.
-    fn iterate_prepare_machine(&mut self) -> Result<(u64, &mut M), Error> {
+    pub fn iterate_prepare_machine(&mut self) -> Result<(u64, &mut M), Error> {
         // Find a runnable VM that has the largest ID.
         let vm_id_to_run = self
             .states
