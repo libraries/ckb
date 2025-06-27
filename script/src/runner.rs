@@ -20,10 +20,8 @@ use ckb_vm::{
     Bytes, CoreMachine, DefaultMachine, DefaultMachineRunner, Error as VmError, SupportMachine,
 };
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use std::collections::HashSet;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub trait Hook<M>
 where
@@ -45,7 +43,7 @@ where
     H: Hook<M>,
 {
     pub machine: M,
-    pub hook: Rc<RefCell<H>>,
+    pub hook: Arc<Mutex<H>>,
 }
 
 impl<M, H> DefaultMachineRunner for HookWraper<M, H>
@@ -57,7 +55,7 @@ where
 
     fn new(machine: DefaultMachine<Self::Inner>) -> Self {
         let machine = M::new(machine);
-        let hook = Rc::new(RefCell::new(H::init(&machine)));
+        let hook = Arc::new(Mutex::new(H::init(&machine)));
         Self { machine, hook }
     }
 
@@ -75,10 +73,11 @@ where
         while self.machine().running() {
             if self.machine_mut().reset_signal() {
                 decoder.reset_instructions_cache();
-                self.hook.borrow_mut().init_by_exec(&mut self.machine);
+                self.hook.lock().unwrap().init_by_exec(&mut self.machine);
             }
             self.hook
-                .borrow_mut()
+                .lock()
+                .unwrap()
                 .step(&mut decoder, &mut self.machine)?;
             self.machine_mut().step(&mut decoder)?;
         }
@@ -92,7 +91,8 @@ where
     ) -> Result<u64, VmError> {
         let args: Vec<Result<Bytes, VmError>> = args.collect();
         self.hook
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .load_program(program, args.clone().into_iter());
         self.machine_mut().load_program(program, args.into_iter())
     }
@@ -105,7 +105,8 @@ where
     ) -> Result<u64, VmError> {
         let args: Vec<Result<Bytes, VmError>> = args.collect();
         self.hook
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .load_program(program, args.clone().into_iter());
         self.machine_mut()
             .load_program_with_metadata(program, metadata, args.into_iter())
