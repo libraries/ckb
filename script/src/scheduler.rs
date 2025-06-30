@@ -305,8 +305,8 @@ where
     /// finer tweaks are required for a single VM.
     pub fn iterate(
         &mut self,
-        pre: impl Fn(u64, &mut M),
-        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
+        mut pre: impl FnMut(u64, &mut M),
+        mut run: impl FnMut(u64, &mut M) -> Result<i8, Error>,
     ) -> Result<IterationResult, Error> {
         self.boot_root_vm_if_needed()?;
 
@@ -418,8 +418,8 @@ where
         &mut self,
         pause: &Pause,
         limit_cycles: Cycle,
-        pre: impl Fn(u64, &mut M),
-        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
+        mut pre: impl FnMut(u64, &mut M),
+        mut run: impl FnMut(u64, &mut M) -> Result<i8, Error>,
     ) -> Result<(VmId, Cycle), Error> {
         let iterate_return = self.iterate_inner(pause.clone(), limit_cycles, pre, run);
         self.consume_cycles(self.iteration_cycles)?;
@@ -464,8 +464,8 @@ where
         &mut self,
         pause: Pause,
         limit_cycles: Cycle,
-        pre: impl Fn(u64, &mut M),
-        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
+        mut pre: impl FnMut(u64, &mut M),
+        mut run: impl FnMut(u64, &mut M) -> Result<i8, Error>,
     ) -> Result<VmId, Error> {
         // Execute the VM for real, consumed cycles in the virtual machine is
         // moved over to +iteration_cycles+, then we reset virtual machine's own
