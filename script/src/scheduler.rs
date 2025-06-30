@@ -291,7 +291,9 @@ where
         };
 
         while !self.terminated() {
-            limit_cycles = self.iterate_outer(&pause, limit_cycles)?.1;
+            limit_cycles = self
+                .iterate_outer(&pause, limit_cycles, |_, _| {}, |_, m| m.run())?
+                .1;
         }
         assert_eq!(self.iteration_cycles, 0);
 
@@ -301,7 +303,11 @@ where
     /// Public API that runs a single VM, processes all messages, then returns the
     /// executed VM ID(so caller can fetch later data). This can be used when more
     /// finer tweaks are required for a single VM.
-    pub fn iterate(&mut self) -> Result<IterationResult, Error> {
+    pub fn iterate(
+        &mut self,
+        pre: impl Fn(u64, &mut M),
+        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
+    ) -> Result<IterationResult, Error> {
         self.boot_root_vm_if_needed()?;
 
         if self.terminated() {
@@ -311,7 +317,7 @@ where
             });
         }
 
-        let (id, _) = self.iterate_outer(&Pause::new(), u64::MAX)?;
+        let (id, _) = self.iterate_outer(&Pause::new(), u64::MAX, pre, run)?;
         let terminated_status = if self.terminated() {
             assert_eq!(self.iteration_cycles, 0);
             Some(self.terminated_result()?)
@@ -412,8 +418,10 @@ where
         &mut self,
         pause: &Pause,
         limit_cycles: Cycle,
+        pre: impl Fn(u64, &mut M),
+        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
     ) -> Result<(VmId, Cycle), Error> {
-        let iterate_return = self.iterate_inner(pause.clone(), limit_cycles);
+        let iterate_return = self.iterate_inner(pause.clone(), limit_cycles, pre, run);
         self.consume_cycles(self.iteration_cycles)?;
         let remaining_cycles = limit_cycles
             .checked_sub(self.iteration_cycles)
@@ -452,7 +460,13 @@ where
     // This is internal function that does the actual VM execution loop.
     // Here both pause signal and limit_cycles are provided so as to simplify
     // branches.
-    fn iterate_inner(&mut self, pause: Pause, limit_cycles: Cycle) -> Result<VmId, Error> {
+    fn iterate_inner(
+        &mut self,
+        pause: Pause,
+        limit_cycles: Cycle,
+        pre: impl Fn(u64, &mut M),
+        run: impl Fn(u64, &mut M) -> Result<i8, Error>,
+    ) -> Result<VmId, Error> {
         // Execute the VM for real, consumed cycles in the virtual machine is
         // moved over to +iteration_cycles+, then we reset virtual machine's own
         // cycle count to zero.
@@ -460,7 +474,11 @@ where
             let (id, vm) = self.iterate_prepare_machine()?;
             vm.inner_mut().set_max_cycles(limit_cycles);
             vm.machine_mut().set_pause(pause);
-            let result = vm.run();
+
+            pre(id, vm);
+            let result = run(id, vm);
+            // let result = vm.run();
+
             let cycles = vm.machine().cycles();
             vm.inner_mut().set_cycles(0);
             (id, result, cycles)
