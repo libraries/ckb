@@ -20,6 +20,7 @@ flatmemory = []
 [dependencies]
 ckb-traits.workspace = true
 byteorder.workspace = true
+ckb-constant.workspace = true
 ckb-types.workspace = true
 ckb-hash.workspace = true
 ckb-vm.workspace = true

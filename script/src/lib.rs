@@ -1,4 +1,5 @@
 //! CKB component to run the type/lock scripts.
+pub mod config;
 pub mod cost_model;
 mod error;
 mod scheduler;

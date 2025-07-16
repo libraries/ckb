@@ -1609,6 +1609,7 @@ version = "0.202.0"
 dependencies = [
  "byteorder",
  "ckb-chain-spec",
+ "ckb-constant",
  "ckb-crypto",
  "ckb-db",
  "ckb-db-schema",

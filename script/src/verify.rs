@@ -6,7 +6,7 @@ use crate::{
     syscalls::generator::generate_ckb_syscalls,
     type_id::TypeIdSystemScript,
     types::{
-        DebugPrinter, FullSuspendedState, Machine, RunMode, ScriptGroup, ScriptGroupType,
+        CellType, DebugPrinter, FullSuspendedState, Machine, RunMode, ScriptGroup, ScriptGroupType,
         ScriptVersion, SgData, SyscallGenerator, TerminatedResult, TransactionState, TxData,
         VerifyResult,
     },
@@ -570,6 +570,53 @@ where
             VMInternalError::External(reason) if reason.eq("stopped") => ScriptError::Interrupts,
             _ => ScriptError::VMInternalError(error),
         }
+    }
+
+    /// Retrieves the script hash for a given cell type, index, and script group type.
+    pub fn get_script_hash_by_location(
+        &self,
+        cell_type: CellType,
+        cell_index: usize,
+        script_group_type: ScriptGroupType,
+    ) -> Result<Byte32, ScriptError> {
+        let script_hash = match (&script_group_type, cell_type) {
+            (ScriptGroupType::Lock, CellType::Input) => self
+                .tx_data
+                .rtx
+                .resolved_inputs
+                .get(cell_index)
+                .ok_or_else(|| ScriptError::Other("index out of bound".into()))?
+                .cell_output
+                .calc_lock_hash(),
+            (ScriptGroupType::Type, CellType::Input) => self
+                .tx_data
+                .rtx
+                .resolved_inputs
+                .get(cell_index)
+                .ok_or_else(|| ScriptError::Other("index out of bound".into()))?
+                .cell_output
+                .type_()
+                .to_opt()
+                .ok_or_else(|| ScriptError::Other("cell should have type script".into()))?
+                .calc_script_hash(),
+            (ScriptGroupType::Type, CellType::Output) => self
+                .tx_data
+                .rtx
+                .transaction
+                .output(cell_index)
+                .ok_or_else(|| ScriptError::Other("index out of bound".into()))?
+                .type_()
+                .to_opt()
+                .ok_or_else(|| ScriptError::Other("cell should have type script".into()))?
+                .calc_script_hash(),
+            _ => {
+                return Err(ScriptError::Other(format!(
+                    "Invalid specified script: {:?} {} {}",
+                    script_group_type, cell_type, cell_index
+                )));
+            }
+        };
+        Ok(script_hash)
     }
 }
 

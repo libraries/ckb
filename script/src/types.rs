@@ -196,6 +196,26 @@ impl fmt::Display for ScriptGroupType {
     }
 }
 
+impl std::str::FromStr for ScriptGroupType {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "lock" => Ok(ScriptGroupType::Lock),
+            "type" => Ok(ScriptGroupType::Type),
+            _ => Err("unknown script group type"),
+        }
+    }
+}
+
+impl TryFrom<&str> for ScriptGroupType {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        s.parse()
+    }
+}
+
 /// Struct specifies which script has verified so far.
 /// State is lifetime free, but capture snapshot need heavy memory copy
 #[derive(Clone)]
@@ -1160,4 +1180,41 @@ pub struct IterationResult {
     pub executed_vm: VmId,
     /// Terminated status
     pub terminated_status: Option<TerminatedResult>,
+}
+
+/// Enum representing cell types (input or output) in a transaction.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CellType {
+    Input,
+    Output,
+}
+
+impl std::fmt::Display for CellType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CellType::Input => write!(f, "input"),
+            CellType::Output => write!(f, "output"),
+        }
+    }
+}
+
+impl std::str::FromStr for CellType {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "input" => Ok(CellType::Input),
+            "output" => Ok(CellType::Output),
+            _ => Err("unknown cell type"),
+        }
+    }
+}
+
+impl TryFrom<&str> for CellType {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        s.parse()
+    }
 }
