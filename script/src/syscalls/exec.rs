@@ -8,9 +8,9 @@ use ckb_traits::CellDataProvider;
 use ckb_types::core::cell::CellMeta;
 use ckb_types::core::error::ARGV_TOO_LONG_TEXT;
 use ckb_types::packed::{Bytes as PackedBytes, BytesVec};
+use ckb_vm::DEFAULT_MEMORY_SIZE;
 use ckb_vm::Memory;
 use ckb_vm::memory::load_c_string_byte_by_byte;
-use ckb_vm::{DEFAULT_STACK_SIZE, RISCV_MAX_MEMORY};
 use ckb_vm::{
     Error as VMError, Register, SupportMachine, Syscalls,
     registers::{A0, A1, A2, A3, A4, A5, A7},
@@ -144,7 +144,10 @@ impl<Mac: SupportMachine, DL: CellDataProvider + Send + Sync + Clone> Syscalls<M
             data.slice(offset..data_size)
         } else {
             // Both offset and length are <= u32::MAX, so offset.checked_add(length) will be always a Some.
-            let end = offset.checked_add(length).ok_or(VMError::MemOutOfBound)?;
+            let end = offset.checked_add(length).ok_or(VMError::MemOutOfBound(
+                u64::MAX,
+                ckb_vm::error::OutOfBoundKind::Memory,
+            ))?;
             if end > data_size {
                 machine.set_register(A0, Mac::REG::from_u8(SLICE_OUT_OF_BOUND));
                 return Ok(true);
@@ -174,7 +177,7 @@ impl<Mac: SupportMachine, DL: CellDataProvider + Send + Sync + Clone> Syscalls<M
 
         let cycles = machine.cycles();
         let max_cycles = machine.max_cycles();
-        machine.reset(max_cycles);
+        machine.reset(max_cycles)?;
         machine.set_cycles(cycles);
 
         match machine.load_elf(&data, true) {
@@ -189,8 +192,8 @@ impl<Mac: SupportMachine, DL: CellDataProvider + Send + Sync + Clone> Syscalls<M
 
         match machine.initialize_stack(
             argv.into_iter().map(Ok),
-            (RISCV_MAX_MEMORY - DEFAULT_STACK_SIZE) as u64,
-            DEFAULT_STACK_SIZE as u64,
+            (DEFAULT_MEMORY_SIZE - DEFAULT_MEMORY_SIZE / 4) as u64,
+            DEFAULT_MEMORY_SIZE as u64 / 4,
         ) {
             Ok(size) => {
                 machine.add_cycles_no_checking(transferred_byte_cycles(size))?;

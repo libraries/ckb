@@ -6,5 +6,6 @@ pub(crate) mod utils;
 
 mod ckb_2019;
 mod ckb_2021;
-#[path = "ckb_latest/mod.rs"]
 mod ckb_2023;
+#[path = "ckb_latest/mod.rs"]
+mod ckb_2025;

@@ -14,6 +14,7 @@ use ckb_types::{
 };
 use ckb_vm::{
     CoreMachine, Error as VMError, Memory, RISCV_PAGESIZE, Syscalls,
+    error::OutOfBoundKind,
     memory::{FLAG_DIRTY, FLAG_EXECUTABLE, FLAG_FREEZED, FLAG_WRITABLE},
     registers::{A0, A1, A2, A3, A4, A5, A7},
 };
@@ -1670,7 +1671,10 @@ fn test_load_overflowed_cell_data_as_code() {
     assert!(machine.memory_mut().store_byte(addr, addr_size, 1).is_ok());
 
     let result = load_code.ecall(&mut machine);
-    assert_eq!(result.unwrap_err(), VMError::MemOutOfBound);
+    assert_eq!(
+        result.unwrap_err(),
+        VMError::MemOutOfBound(u64::MAX, OutOfBoundKind::Memory)
+    );
 }
 
 fn _test_load_cell_data_on_freezed_memory(data: &[u8]) -> Result<(), TestCaseError> {

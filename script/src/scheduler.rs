@@ -17,7 +17,10 @@ use ckb_vm::{
     bytes::Bytes,
     cost_model::estimate_cycles,
     elf::parse_elf,
-    machine::{CoreMachine, DefaultMachineBuilder, DefaultMachineRunner, Pause, SupportMachine},
+    error::OutOfBoundKind,
+    machine::{
+        AbstractDefaultMachineBuilder, CoreMachine, DefaultMachineRunner, Pause, SupportMachine,
+    },
     memory::Memory,
     registers::A0,
     snapshot2::Snapshot2,
@@ -690,7 +693,9 @@ where
                     let copy_length = u64::min(full_length, real_length);
                     for i in 0..copy_length {
                         let fd = inherited_fd[i as usize].0;
-                        let addr = buffer_addr.checked_add(i * 8).ok_or(Error::MemOutOfBound)?;
+                        let addr = buffer_addr
+                            .checked_add(i * 8)
+                            .ok_or(Error::MemOutOfBound(u64::MAX, OutOfBoundKind::Memory))?;
                         machine
                             .inner_mut()
                             .memory_mut()
@@ -1084,8 +1089,9 @@ where
             snapshot2_context: Arc::new(Mutex::new(Snapshot2Context::new(self.sg_data.clone()))),
         };
 
-        let machine_builder = DefaultMachineBuilder::new(core_machine)
-            .instruction_cycle_func(Box::new(estimate_cycles));
+        let machine_builder =
+            AbstractDefaultMachineBuilder::<M::Inner, M::Decoder>::new(core_machine)
+                .instruction_cycle_func(Box::new(estimate_cycles));
         let machine_builder =
             (self.syscall_generator)(id, &self.sg_data, &vm_context, &self.syscall_context)
                 .into_iter()

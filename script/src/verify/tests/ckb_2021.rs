@@ -6,3 +6,5 @@ mod features_since_v2019;
 mod features_since_v2021;
 #[path = "ckb_latest/features_since_v2023.rs"]
 mod features_since_v2023;
+#[path = "ckb_latest/features_since_v2025.rs"]
+mod features_since_v2025;

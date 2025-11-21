@@ -2021,15 +2021,14 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm"
-version = "0.24.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad137e2f1c9a363ce19a883a2113b1dfcc00a936945e34b62e3726c49e7171fb"
+version = "0.24.0"
+source = "git+https://github.com/nervosnetwork/ckb-vm?branch=develop#8f14f77a7db4f68a0290cdc26bc23e3e1275e158"
 dependencies = [
  "byteorder",
  "bytes",
  "cc",
  "ckb-vm-definitions",
- "derive_more 0.99.20",
+ "derive_more 1.0.0",
  "goblin 0.2.3",
  "goblin 0.4.0",
  "rand 0.7.3",
@@ -2039,9 +2038,8 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm-definitions"
-version = "0.24.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b436017fd6676bea413d54e07a5a9cc1d7c4b5c02e4ab07d3527225a5de6677"
+version = "0.24.0"
+source = "git+https://github.com/nervosnetwork/ckb-vm?branch=develop#8f14f77a7db4f68a0290cdc26bc23e3e1275e158"
 dependencies = [
  "paste",
 ]
@@ -2594,6 +2592,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
 dependencies = [
+ "convert_case 0.6.0",
  "proc-macro2",
  "quote",
  "syn 2.0.108",
