@@ -11,8 +11,8 @@ use ckb_types::{
     prelude::*,
 };
 use ckb_vm::{
-    ISA_B, ISA_IMC, ISA_MOP, Syscalls,
-    machine::{VERSION0, VERSION1, VERSION2},
+    ISA_B, ISA_CFI, ISA_IMC, ISA_MOP, Syscalls,
+    machine::{VERSION0, VERSION1, VERSION2, VERSION3},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -69,12 +69,14 @@ pub enum ScriptVersion {
     V1 = 1,
     /// CKB VM 2 with Syscall version 1, version 2 and version 3.
     V2 = 2,
+    /// CKB VM 3 with Syscall version 1, version 2 and version 3.
+    V3 = 3,
 }
 
 impl ScriptVersion {
     /// Returns the latest version.
     pub const fn latest() -> Self {
-        Self::V2
+        Self::V3
     }
 
     /// Returns the ISA set of CKB VM in current script version.
@@ -83,6 +85,7 @@ impl ScriptVersion {
             Self::V0 => ISA_IMC,
             Self::V1 => ISA_IMC | ISA_B | ISA_MOP,
             Self::V2 => ISA_IMC | ISA_B | ISA_MOP,
+            Self::V3 => ISA_IMC | ISA_B | ISA_MOP | ISA_CFI,
         }
     }
 
@@ -92,6 +95,7 @@ impl ScriptVersion {
             Self::V0 => VERSION0,
             Self::V1 => VERSION1,
             Self::V2 => VERSION2,
+            Self::V3 => VERSION3,
         }
     }
 
@@ -105,6 +109,7 @@ impl ScriptVersion {
             Self::V0 => ScriptHashType::Data,
             Self::V1 => ScriptHashType::Data1,
             Self::V2 => ScriptHashType::Data2,
+            Self::V3 => ScriptHashType::Data3,
         }
     }
 
@@ -539,7 +544,11 @@ impl FullSuspendedState {
                     + RISCV_GENERAL_REGISTER_NUMBER * size_of::<u64>()
                     + size_of::<u64>()
                     + size_of::<u64>()
-                    + size_of::<u64>();
+                    + size_of::<u64>()
+                    + size_of::<u8>()
+                    + size_of::<u32>()
+                    + size_of::<u64>()
+                    + snapshot.ss.len() * size_of::<u8>();
                 acc
             })
             + (self.fds.len() * (size_of::<Fd>() + size_of::<VmId>()))) as u64
@@ -832,7 +841,10 @@ impl<DL> TxInfo<DL> {
         let script_hash_type = ScriptHashType::try_from(script.hash_type())
             .map_err(|err| ScriptError::InvalidScriptHashType(err.to_string()))?;
         match script_hash_type {
-            ScriptHashType::Data | ScriptHashType::Data1 | ScriptHashType::Data2 => {
+            ScriptHashType::Data
+            | ScriptHashType::Data1
+            | ScriptHashType::Data2
+            | ScriptHashType::Data3 => {
                 if let Some((dep_index, lazy)) = self.binaries_by_data_hash.get(&script.code_hash())
                 {
                     Ok((lazy, dep_index))
@@ -896,8 +908,14 @@ impl<DL> TxInfo<DL> {
             .is_vm_version_2_and_syscalls_3_enabled(epoch_number)
     }
 
+    fn is_vm_version_3_and_syscalls_4_enabled(&self) -> bool {
+        let epoch_number = self.tx_env.epoch_number_without_proposal_window();
+        epoch_number >= 15
+    }
+
     /// Returns the version of the machine based on the script and the consensus rules.
     pub fn select_version(&self, script: &Script) -> Result<ScriptVersion, ScriptError> {
+        let is_vm_version_3_and_syscalls_4_enabled = self.is_vm_version_3_and_syscalls_4_enabled();
         let is_vm_version_2_and_syscalls_3_enabled = self.is_vm_version_2_and_syscalls_3_enabled();
         let is_vm_version_1_and_syscalls_2_enabled = self.is_vm_version_1_and_syscalls_2_enabled();
         let script_hash_type = ScriptHashType::try_from(script.hash_type())
@@ -918,8 +936,17 @@ impl<DL> TxInfo<DL> {
                     Err(ScriptError::InvalidVmVersion(2))
                 }
             }
+            ScriptHashType::Data3 => {
+                if is_vm_version_3_and_syscalls_4_enabled {
+                    Ok(ScriptVersion::V3)
+                } else {
+                    Err(ScriptError::InvalidVmVersion(3))
+                }
+            }
             ScriptHashType::Type => {
-                if is_vm_version_2_and_syscalls_3_enabled {
+                if is_vm_version_3_and_syscalls_4_enabled {
+                    return Ok(ScriptVersion::V3);
+                } else if is_vm_version_2_and_syscalls_3_enabled {
                     Ok(ScriptVersion::V2)
                 } else if is_vm_version_1_and_syscalls_2_enabled {
                     Ok(ScriptVersion::V1)

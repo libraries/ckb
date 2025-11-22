@@ -18,7 +18,7 @@ use ckb_types::{
         Capacity, Cycle, DepType, EpochNumber, EpochNumberWithFraction, HeaderView, ScriptHashType,
         TransactionBuilder, TransactionInfo, capacity_bytes,
         cell::{CellMeta, CellMetaBuilder},
-        hardfork::{CKB2021, CKB2023, HardForks},
+        hardfork::{CKB2021, CKB2023, CKB2025, HardForks},
     },
     h256,
     packed::{
@@ -154,6 +154,7 @@ pub(crate) struct TransactionScriptsVerifierWithEnv {
     consensus: Arc<Consensus>,
     version_1_enabled_at: EpochNumber,
     version_2_enabled_at: EpochNumber,
+    version_3_enabled_at: EpochNumber,
     _tmp_dir: TempDir,
     skip_pause: Arc<AtomicBool>,
 }
@@ -165,6 +166,7 @@ impl TransactionScriptsVerifierWithEnv {
         let store = Arc::new(ChainDB::new(db, Default::default()));
         let version_1_enabled_at = 5;
         let version_2_enabled_at = 10;
+        let version_3_enabled_at = 15;
 
         let hardfork_switch = HardForks {
             ckb2021: CKB2021::new_mirana()
@@ -177,6 +179,11 @@ impl TransactionScriptsVerifierWithEnv {
                 .rfc_0049(version_2_enabled_at)
                 .build()
                 .unwrap(),
+            ckb2025: CKB2025::new_mirana()
+                .as_builder()
+                .rfc_0099(version_3_enabled_at)
+                .build()
+                .unwrap(),
         };
         let consensus = Arc::new(
             ConsensusBuilder::default()
@@ -187,6 +194,7 @@ impl TransactionScriptsVerifierWithEnv {
             store,
             version_1_enabled_at,
             version_2_enabled_at,
+            version_3_enabled_at,
             consensus,
             _tmp_dir: tmp_dir,
             skip_pause: Arc::new(AtomicBool::new(false)),
@@ -221,6 +229,7 @@ impl TransactionScriptsVerifierWithEnv {
             ScriptVersion::V0 => EpochNumberWithFraction::new(0, 0, 1),
             ScriptVersion::V1 => EpochNumberWithFraction::new(self.version_1_enabled_at, 0, 1),
             ScriptVersion::V2 => EpochNumberWithFraction::new(self.version_2_enabled_at, 0, 1),
+            ScriptVersion::V3 => EpochNumberWithFraction::new(self.version_3_enabled_at, 0, 1),
         };
         let header = HeaderView::new_advanced_builder().epoch(epoch).build();
         let tx_env = Arc::new(TxVerifyEnv::new_commit(&header));

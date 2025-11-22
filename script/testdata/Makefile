@@ -42,6 +42,7 @@ ALL_BINS := jalr_zero \
             current_cycles_with_snapshot \
             vm_version \
             vm_version_2 \
+            vm_version_3 \
             vm_version_with_snapshot \
             exec_callee \
             exec_caller_from_cell_data \
@@ -128,6 +129,7 @@ infinite_exec: infinite_exec.c
 infinite_loop: infinite_loop.c
 vm_version: vm_version.c
 vm_version_2: vm_version_2.c
+vm_version_3: vm_version_3.c
 vm_version_with_snapshot: vm_version_with_snapshot.c
 exec_callee: exec_callee.c
 exec_callee_pause: exec_callee_pause.c

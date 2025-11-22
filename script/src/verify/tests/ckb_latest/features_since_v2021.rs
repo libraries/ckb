@@ -118,6 +118,9 @@ fn test_b_extension() {
         ScriptVersion::V2 => {
             assert_eq!(result.ok(), Some(1875));
         }
+        ScriptVersion::V3 => {
+            assert_eq!(result.ok(), Some(1875));
+        }
     }
 }
 
@@ -807,7 +810,7 @@ fn _check_typical_secp256k1_blake160_2_in_2_out_tx_with_chunk(step_cycles: Cycle
     let cycles_once = result.unwrap();
     assert!(cycles <= TWO_IN_TWO_OUT_CYCLES, "step_cycles {step_cycles}");
 
-    if script_version == crate::ScriptVersion::V2 {
+    if script_version >= crate::ScriptVersion::V2 {
         assert!(
             cycles >= TWO_IN_TWO_OUT_CYCLES - V2_CYCLE_BOUND,
             "step_cycles {step_cycles}"
@@ -877,7 +880,7 @@ fn _check_typical_secp256k1_blake160_2_in_2_out_tx_with_state(step_cycles: Cycle
 
     let cycles_once = result.unwrap();
     assert!(cycles <= TWO_IN_TWO_OUT_CYCLES, "step_cycles {step_cycles}");
-    if script_version == crate::ScriptVersion::V2 {
+    if script_version >= crate::ScriptVersion::V2 {
         assert!(
             cycles >= TWO_IN_TWO_OUT_CYCLES - V2_CYCLE_BOUND,
             "step_cycles {step_cycles}"
@@ -969,7 +972,7 @@ fn _check_typical_secp256k1_blake160_2_in_2_out_tx_with_snap(step_cycles: Cycle)
 
     let cycles_once = result.unwrap();
     assert!(cycles <= TWO_IN_TWO_OUT_CYCLES, "step_cycles {step_cycles}");
-    if script_version == crate::ScriptVersion::V2 {
+    if script_version >= crate::ScriptVersion::V2 {
         assert!(
             cycles >= TWO_IN_TWO_OUT_CYCLES - V2_CYCLE_BOUND,
             "cycles {cycles} step_cycles {step_cycles}"
@@ -1041,7 +1044,7 @@ fn check_typical_secp256k1_blake160_2_in_2_out_tx_with_complete() {
     let cycles_once = result.unwrap();
     assert!(cycles <= TWO_IN_TWO_OUT_CYCLES);
 
-    if script_version == crate::ScriptVersion::V2 {
+    if script_version >= crate::ScriptVersion::V2 {
         assert!(cycles >= TWO_IN_TWO_OUT_CYCLES - V2_CYCLE_BOUND);
     } else {
         assert!(cycles >= TWO_IN_TWO_OUT_CYCLES - CYCLE_BOUND);

@@ -42,7 +42,7 @@ fn simple_spawn_test(bin_path: &str, args: &[u8]) -> Result<Cycle, Error> {
 #[test]
 fn check_spawn_simple_read_write() {
     let result = simple_spawn_test("testdata/spawn_cases", &[1]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -50,14 +50,14 @@ fn check_spawn_write_dead_lock() {
     let result = simple_spawn_test("testdata/spawn_cases", &[2]);
     assert_eq!(
         result.unwrap_err().to_string().contains("deadlock"),
-        SCRIPT_VERSION == ScriptVersion::V2
+        SCRIPT_VERSION >= ScriptVersion::V2
     );
 }
 
 #[test]
 fn check_spawn_invalid_fd() {
     let result = simple_spawn_test("testdata/spawn_cases", &[3]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -65,50 +65,50 @@ fn check_spawn_wait_dead_lock() {
     let result = simple_spawn_test("testdata/spawn_cases", &[4]);
     assert_eq!(
         result.unwrap_err().to_string().contains("deadlock"),
-        SCRIPT_VERSION == ScriptVersion::V2
+        SCRIPT_VERSION >= ScriptVersion::V2
     );
 }
 
 #[test]
 fn check_spawn_read_write_with_close() {
     let result = simple_spawn_test("testdata/spawn_cases", &[5]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_wait_multiple() {
     let result = simple_spawn_test("testdata/spawn_cases", &[6]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_inherited_fds() {
     let result = simple_spawn_test("testdata/spawn_cases", &[7]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_inherited_fds_without_owner() {
     let result = simple_spawn_test("testdata/spawn_cases", &[8]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_read_then_close() {
     let result = simple_spawn_test("testdata/spawn_cases", &[9]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_max_vms_count() {
     let result = simple_spawn_test("testdata/spawn_cases", &[10]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_max_fds_limit() {
     let result = simple_spawn_test("testdata/spawn_cases", &[11]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -1215,31 +1215,31 @@ proptest! {
 #[test]
 fn check_spawn_close_invalid_fd() {
     let result = simple_spawn_test("testdata/spawn_cases", &[12]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_write_closed_fd() {
     let result = simple_spawn_test("testdata/spawn_cases", &[13]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_pid() {
     let result = simple_spawn_test("testdata/spawn_cases", &[14]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_offset_out_of_bound() {
     let result = simple_spawn_test("testdata/spawn_cases", &[15]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_length_out_of_bound() {
     let result = simple_spawn_test("testdata/spawn_cases", &[16]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -1286,19 +1286,19 @@ fn check_spawn_huge_swap() {
 #[test]
 fn check_spawn_invaild_index() {
     let result = simple_spawn_test("testdata/spawn_cases", &[17]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_spawn_index_out_of_bound() {
     let result = simple_spawn_test("testdata/spawn_cases", &[18]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
 fn check_root_inherited_fds() {
     let result = simple_spawn_test("testdata/spawn_cases", &[19]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -1390,7 +1390,7 @@ fn check_spawn_io_cycles() {
 #[test]
 fn check_spawn_saturate_memory() {
     let result = simple_spawn_test("testdata/spawn_saturate_memory", &[0]);
-    assert_eq!(result.is_ok(), SCRIPT_VERSION == ScriptVersion::V2);
+    assert_eq!(result.is_ok(), SCRIPT_VERSION >= ScriptVersion::V2);
 }
 
 #[test]
@@ -1472,6 +1472,7 @@ fn check_fuzz_crash_1() {
                 .to_string()
                 .contains("SourceEntry parse_from_u64 0")
         ),
+        ScriptVersion::V3 => assert!(result.unwrap_err().to_string().contains("error code -1")),
     }
 }
 
@@ -1507,6 +1508,12 @@ fn check_fuzz_crash_2() {
         ),
         ScriptVersion::V1 => assert_eq!(result.unwrap(), 58741),
         ScriptVersion::V2 => assert_eq!(result.unwrap(), 58686),
+        ScriptVersion::V3 => assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("InvalidInstruction")
+        ),
     }
 }
 
@@ -1533,12 +1540,20 @@ fn check_fuzz_crash_3() {
     };
     let verifier = TransactionScriptsVerifierWithEnv::new();
     let result = verifier.verify(script_version, &rtx, 70000000);
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("MemWriteOnExecutablePage")
-    );
+    match script_version {
+        ScriptVersion::V0 | ScriptVersion::V1 | ScriptVersion::V2 => assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("MemWriteOnExecutablePage")
+        ),
+        ScriptVersion::V3 => assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("ExceededMaximumCycles")
+        ),
+    }
 }
 
 // This test documents a bug in Meepo hardfork version: when IO processing

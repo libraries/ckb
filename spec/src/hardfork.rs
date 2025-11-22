@@ -3,7 +3,9 @@
 use ckb_constant::hardfork::{mainnet, testnet};
 use ckb_types::core::{
     EpochNumber,
-    hardfork::{CKB2021, CKB2021Builder, CKB2023, CKB2023Builder, HardForks},
+    hardfork::{
+        CKB2021, CKB2021Builder, CKB2023, CKB2023Builder, CKB2025, CKB2025Builder, HardForks,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct HardForkConfig {
     /// ckb 2023 epoch
     pub ckb2023: Option<EpochNumber>,
+    /// ckb 2025 epoch
+    pub ckb2025: Option<EpochNumber>,
 }
 
 impl HardForkConfig {
@@ -29,6 +33,7 @@ impl HardForkConfig {
         Ok(HardForks {
             ckb2021: ckb2021.build()?,
             ckb2023: CKB2023::new_mirana().as_builder().build()?,
+            ckb2025: CKB2025::new_mirana().as_builder().build()?,
         })
     }
 
@@ -44,9 +49,13 @@ impl HardForkConfig {
         let mut ckb2023 = CKB2023::new_builder();
         ckb2023 = self.update_2023(ckb2023, testnet::CKB2023_START_EPOCH)?;
 
+        let mut ckb2025 = CKB2025::new_builder();
+        ckb2025 = self.update_2025(ckb2025, testnet::CKB2025_START_EPOCH)?;
+
         Ok(HardForks {
             ckb2021: ckb2021.build()?,
             ckb2023: ckb2023.build()?,
+            ckb2025: ckb2025.build()?,
         })
     }
 
@@ -76,6 +85,15 @@ impl HardForkConfig {
         Ok(builder)
     }
 
+    fn update_2025(
+        &self,
+        builder: CKB2025Builder,
+        ckb2025: EpochNumber,
+    ) -> Result<CKB2025Builder, String> {
+        let builder = builder.rfc_0099(ckb2025);
+        Ok(builder)
+    }
+
     /// Converts to a hard fork switch.
     ///
     /// Enable features which are set to `None` at the dev default config.
@@ -88,6 +106,16 @@ impl HardForkConfig {
             CKB2023::new_dev_default()
         };
 
-        Ok(HardForks { ckb2021, ckb2023 })
+        let ckb2025 = if let Some(epoch) = self.ckb2025 {
+            CKB2025::new_with_specified(epoch)
+        } else {
+            CKB2025::new_dev_default()
+        };
+
+        Ok(HardForks {
+            ckb2021,
+            ckb2023,
+            ckb2025,
+        })
     }
 }
